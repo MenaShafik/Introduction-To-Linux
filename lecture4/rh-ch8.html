@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RH124 Ch8 – Monitoring & Managing Linux Processes</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07090b;
+    --panel: #0c0f12;
+    --panel2: #0f1318;
+    --border: #181e24;
+    --text: #cdd6e0;
+    --muted: #3d5060;
+    --cyan: #00e5ff;
+    --green: #69ff47;
+    --yellow: #ffe057;
+    --orange: #ff7b25;
+    --red: #ff4444;
+    --pink: #ff4fa3;
+    --blue: #448aff;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); padding:24px; font-size:13px; line-height:1.5; }
+
+  /* HEADER */
+  .header {
+    display:grid; grid-template-columns:auto 1fr auto;
+    align-items:center; gap:18px;
+    margin-bottom:24px; padding-bottom:16px;
+    border-bottom:1px solid var(--border);
+    position:relative;
+  }
+  .header::after { content:''; position:absolute; bottom:-1px; left:0; width:200px; height:2px;
+    background:linear-gradient(90deg,var(--cyan),transparent); }
+  .hicon { width:50px; height:50px; border-radius:8px; background:rgba(0,229,255,.08);
+    border:1px solid rgba(0,229,255,.2); display:flex; align-items:center; justify-content:center; font-size:22px; }
+  .htitle h1 { font-size:25px; font-weight:800; letter-spacing:-0.5px; }
+  .htitle h1 em { color:var(--cyan); font-style:normal; }
+  .htitle p { font-size:11px; color:var(--muted); font-family:var(--mono); margin-top:4px; }
+  .hbadge { font-family:var(--mono); font-size:10px; padding:5px 13px; border-radius:3px;
+    background:rgba(0,229,255,.07); color:var(--cyan); border:1px solid rgba(0,229,255,.2); }
+
+  /* GRID */
+  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .s2 { grid-column:span 2; }
+  .s3 { grid-column:span 3; }
+
+  /* CARD */
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
+  .ch { display:flex; align-items:center; gap:10px; padding:10px 14px;
+    border-bottom:1px solid var(--border); background:var(--panel2); }
+  .ch h2 { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1.8px; color:var(--muted); }
+  .ch .ci { font-size:15px; }
+  .cdot { width:6px; height:6px; border-radius:50%; margin-left:auto; flex-shrink:0; }
+  .cb { padding:14px; display:flex; flex-direction:column; gap:10px; }
+
+  /* CODE BLOCK */
+  .code {
+    background:#050709; border:1px solid #111820;
+    border-left:3px solid var(--lc, var(--cyan));
+    border-radius:3px; padding:9px 13px;
+    font-family:var(--mono); font-size:11.5px; line-height:1.9;
+  }
+  .pr { color:var(--green); }
+  .cm { color:var(--yellow); }
+  .fl { color:var(--orange); }
+  .ar { color:var(--cyan); }
+  .co { color:#2a3d4d; font-size:10.5px; display:block; margin-top:1px; }
+  .ou { color:#2d4455; font-size:11px; display:block; margin-top:4px; padding-top:4px; border-top:1px solid #0e1820; }
+  .hl  { color:var(--green); }
+  .hlc { color:var(--cyan); }
+  .hly { color:var(--yellow); }
+  .hlo { color:var(--orange); }
+  .hlr { color:var(--red); }
+  .hlp { color:var(--pink); }
+
+  /* NOTE / TIP */
+  .note { background:rgba(255,123,37,.06); border:1px solid rgba(255,123,37,.18);
+    border-left:3px solid var(--orange); border-radius:3px; padding:9px 13px;
+    font-size:11.5px; line-height:1.65; color:#b8a090; }
+  .note strong { color:var(--orange); }
+  .tip  { background:rgba(0,229,255,.05); border:1px solid rgba(0,229,255,.15);
+    border-left:3px solid var(--cyan); border-radius:3px; padding:9px 13px;
+    font-size:11.5px; line-height:1.65; color:#90b8c8; }
+  .tip strong { color:var(--cyan); }
+
+  /* TABLE */
+  table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; }
+  th { background:#090d10; color:var(--muted); font-size:9.5px; text-transform:uppercase;
+    letter-spacing:1px; padding:7px 11px; text-align:left; border-bottom:1px solid var(--border); }
+  td { padding:6px 11px; border-bottom:1px solid #0e1820; vertical-align:top; line-height:1.55; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:#0a1018; }
+  .tc  { color:var(--yellow); }
+  .ta  { color:var(--cyan); }
+  .tg  { color:var(--green); }
+  .tr2 { color:var(--red); }
+  .td2 { color:#7a9aaa; font-size:10.5px; }
+  .to  { color:var(--orange); }
+
+  /* PROCESS STATE PILLS */
+  .states { display:flex; flex-wrap:wrap; gap:8px; }
+  .state-pill {
+    display:flex; flex-direction:column; align-items:center;
+    background:#050709; border:1px solid var(--border);
+    border-radius:4px; padding:10px 14px; min-width:70px;
+    font-family:var(--mono);
+  }
+  .state-pill .sc { font-size:20px; font-weight:700; }
+  .state-pill .sn { font-size:10px; color:var(--muted); margin-top:4px; text-align:center; }
+
+  /* SIGNAL TABLE styling done via table above */
+
+  /* NICE SCALE */
+  .nice-scale {
+    display:flex; align-items:center; gap:0;
+    font-family:var(--mono); font-size:11px; overflow:hidden; border-radius:4px;
+    border:1px solid var(--border);
+  }
+  .ns-box { flex:1; padding:8px 4px; text-align:center; }
+  .ns-label { font-size:9px; color:var(--muted); display:block; margin-top:3px; }
+
+  /* EXAM TIPS */
+  .tips { display:flex; flex-direction:column; gap:8px; }
+  .ti { display:flex; gap:10px; align-items:flex-start; font-size:11.5px; line-height:1.6; }
+  .ttag { font-family:var(--mono); font-size:9.5px; padding:2px 8px; border-radius:2px; flex-shrink:0; margin-top:2px; }
+  .tw { background:rgba(255,68,68,.12);  color:#ff8888; border:1px solid rgba(255,68,68,.25); }
+  .tk { background:rgba(105,255,71,.1);  color:var(--green); border:1px solid rgba(105,255,71,.25); }
+  .ti2{ background:rgba(0,229,255,.1);   color:var(--cyan);  border:1px solid rgba(0,229,255,.25); }
+  .th { background:rgba(255,224,87,.1);  color:var(--yellow);border:1px solid rgba(255,224,87,.25); }
+
+  .footer { margin-top:18px; padding-top:12px; border-top:1px solid var(--border);
+    font-family:var(--mono); font-size:10px; color:#1a2830;
+    display:flex; justify-content:space-between; }
+
+  @media(max-width:900px){ .grid{grid-template-columns:1fr 1fr;} .s2,.s3{grid-column:span 2;} }
+  @media(max-width:580px){ .grid{grid-template-columns:1fr;} .s2,.s3{grid-column:span 1;} }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="hicon">⚙️</div>
+  <div class="htitle">
+    <h1>RH124 <em>Chapter 8</em></h1>
+    <p>Monitoring &amp; Managing Linux Processes · Quick Reference</p>
+  </div>
+  <div class="hbadge">RHCSA Prep</div>
+</div>
+
+<div class="grid">
+
+  <!-- PROCESS CONCEPTS -->
+  <div class="card">
+    <div class="ch"><span class="ci">🧠</span><h2>Process Basics</h2><div class="cdot" style="background:var(--cyan);"></div></div>
+    <div class="cb">
+      <table>
+        <tr><th>Term</th><th>Meaning</th></tr>
+        <tr><td class="tc">PID</td><td class="td2">Process ID — unique number for each process</td></tr>
+        <tr><td class="tc">PPID</td><td class="td2">Parent Process ID — who spawned this process</td></tr>
+        <tr><td class="tc">UID</td><td class="td2">User ID of process owner</td></tr>
+        <tr><td class="tc">TTY</td><td class="td2">Terminal associated with process</td></tr>
+        <tr><td class="tc">RSS</td><td class="td2">Resident Set Size — RAM actually used</td></tr>
+        <tr><td class="tc">VSZ</td><td class="td2">Virtual memory size</td></tr>
+        <tr><td class="tc">NI</td><td class="td2">Nice value (priority -20 to +19)</td></tr>
+        <tr><td class="tc">STAT</td><td class="td2">Current process state (R,S,Z,T...)</td></tr>
+      </table>
+      <div class="tip"><strong>PID 1</strong> is always <code>systemd</code> — the mother of all processes. Every other process descends from it.</div>
+    </div>
+  </div>
+
+  <!-- PROCESS STATES -->
+  <div class="card">
+    <div class="ch"><span class="ci">🚦</span><h2>Process States</h2><div class="cdot" style="background:var(--green);"></div></div>
+    <div class="cb">
+      <div class="states">
+        <div class="state-pill"><span class="sc" style="color:var(--green);">R</span><span class="sn">Running /<br>Runnable</span></div>
+        <div class="state-pill"><span class="sc" style="color:var(--cyan);">S</span><span class="sn">Sleeping<br>(interruptible)</span></div>
+        <div class="state-pill"><span class="sc" style="color:var(--blue);">D</span><span class="sn">Sleeping<br>(uninterruptible)</span></div>
+        <div class="state-pill"><span class="sc" style="color:var(--yellow);">T</span><span class="sn">Stopped /<br>Traced</span></div>
+        <div class="state-pill"><span class="sc" style="color:var(--red);">Z</span><span class="sn">Zombie<br>(defunct)</span></div>
+        <div class="state-pill"><span class="sc" style="color:var(--muted);">I</span><span class="sn">Idle kernel<br>thread</span></div>
+      </div>
+      <table style="margin-top:4px;">
+        <tr><th>Extra Flag</th><th>Meaning</th></tr>
+        <tr><td class="tc">s</td><td class="td2">Session leader</td></tr>
+        <tr><td class="tc">l</td><td class="td2">Multi-threaded</td></tr>
+        <tr><td class="tc">+</td><td class="td2">In foreground process group</td></tr>
+        <tr><td class="tc">&lt;</td><td class="td2">High priority (nice &lt; 0)</td></tr>
+        <tr><td class="tc">N</td><td class="td2">Low priority (nice &gt; 0)</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ps COMMAND -->
+  <div class="card">
+    <div class="ch"><span class="ci">📋</span><h2>ps — Process Snapshot</h2><div class="cdot" style="background:var(--yellow);"></div></div>
+    <div class="cb">
+      <div class="code" style="--lc:var(--yellow);">
+        <span class="pr">$ </span><span class="cm">ps</span>
+        <span class="co"># your processes in current terminal</span>
+        <span class="ou"><span class="hlc">PID TTY     TIME CMD</span>
+1234 pts/0  00:00 bash
+1350 pts/0  00:00 ps</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">ps</span> <span class="fl">aux</span>
+        <span class="co"># ALL processes, all users — most used!</span>
+        <span class="ou"><span class="hlc">USER  PID %CPU %MEM VSZ  RSS TTY STAT START TIME COMMAND</span>
+root    1  0.1  0.5 ...  ... ?   Ss   ...  ...  systemd
+ali  1234  0.0  0.1 ...  ... pts/0 S+ ...  ...  bash</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">ps</span> <span class="fl">-ef</span>
+        <span class="co"># full format — shows PPID (parent PID)</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">ps</span> <span class="fl">aux</span> <span class="fl">--sort=</span><span class="ar">-%cpu</span>
+        <span class="co"># sort by CPU usage (highest first)</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">ps</span> <span class="fl">aux</span> <span class="fl">--sort=</span><span class="ar">-%mem</span>
+        <span class="co"># sort by memory usage</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">ps</span> <span class="fl">-u</span> <span class="ar">ali</span>
+        <span class="co"># processes owned by user ali</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- top COMMAND -->
+  <div class="card s2" style="--lc:var(--green);">
+    <div class="ch"><span class="ci">📊</span><h2>top — Live Process Monitor</h2><div class="cdot" style="background:var(--green);"></div></div>
+    <div class="cb">
+      <div class="code" style="--lc:var(--green);">
+        <span class="pr">$ </span><span class="cm">top</span>
+        <span class="co"># opens interactive real-time monitor</span>
+        <span class="ou"><span class="hly">top - 10:32:01  up 2 days,  load average: 0.12, 0.08, 0.05</span>
+<span class="hlc">Tasks:</span> 210 total,  1 running, 209 sleeping
+<span class="hlc">%Cpu(s):</span>  2.3 us,  0.5 sy,  0.0 ni, 96.8 id
+<span class="hlc">MiB Mem:</span> 7820 total,  512 free,  4200 used
+<span class="hlc">MiB Swap:</span> 2048 total, 1900 free</span>
+      </div>
+      <table>
+        <tr><th>Key</th><th>Action inside top</th><th>Key</th><th>Action inside top</th></tr>
+        <tr><td class="tc">h</td><td class="td2">Help screen</td><td class="tc">k</td><td class="td2">Kill a process (enter PID)</td></tr>
+        <tr><td class="tc">q</td><td class="td2">Quit top</td><td class="tc">r</td><td class="td2">Renice (change priority)</td></tr>
+        <tr><td class="tc">P</td><td class="td2">Sort by CPU %</td><td class="tc">u</td><td class="td2">Filter by username</td></tr>
+        <tr><td class="tc">M</td><td class="td2">Sort by Memory %</td><td class="tc">f</td><td class="td2">Choose display fields</td></tr>
+        <tr><td class="tc">1</td><td class="td2">Show per-CPU stats</td><td class="tc">d</td><td class="td2">Change refresh delay</td></tr>
+      </table>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="code">
+          <span class="pr">$ </span><span class="cm">top</span> <span class="fl">-u</span> <span class="ar">ali</span>
+          <span class="co"># show only ali's processes</span>
+        </div>
+        <div class="code">
+          <span class="pr">$ </span><span class="cm">top</span> <span class="fl">-p</span> <span class="ar">1234,5678</span>
+          <span class="co"># watch specific PIDs</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIGNALS -->
+  <div class="card" style="--lc:var(--red);">
+    <div class="ch"><span class="ci">📡</span><h2>Signals</h2><div class="cdot" style="background:var(--red);"></div></div>
+    <div class="cb">
+      <table>
+        <tr><th>Signal</th><th>Number</th><th>Meaning</th></tr>
+        <tr><td class="tg">SIGHUP</td><td class="ta">1</td><td class="td2">Hangup / reload config</td></tr>
+        <tr><td class="tg">SIGINT</td><td class="ta">2</td><td class="td2">Interrupt (Ctrl+C)</td></tr>
+        <tr><td class="tg">SIGQUIT</td><td class="ta">3</td><td class="td2">Quit + core dump</td></tr>
+        <tr><td class="tg">SIGKILL</td><td class="ta" style="color:var(--red);">9</td><td class="td2">Force kill — cannot be caught!</td></tr>
+        <tr><td class="tg">SIGTERM</td><td class="ta" style="color:var(--yellow);">15</td><td class="td2">Graceful terminate (default)</td></tr>
+        <tr><td class="tg">SIGSTOP</td><td class="ta">19</td><td class="td2">Pause process (cannot be caught)</td></tr>
+        <tr><td class="tg">SIGCONT</td><td class="ta">18</td><td class="td2">Resume stopped process</td></tr>
+        <tr><td class="tg">SIGTSTP</td><td class="ta">20</td><td class="td2">Stop from terminal (Ctrl+Z)</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- KILL COMMANDS -->
+  <div class="card" style="--lc:var(--red);">
+    <div class="ch"><span class="ci">💀</span><h2>kill · killall · pkill</h2><div class="cdot" style="background:var(--red);"></div></div>
+    <div class="cb">
+      <div class="code" style="--lc:var(--yellow);">
+        <span class="pr">$ </span><span class="cm">kill</span> <span class="ar">1234</span>
+        <span class="co"># send SIGTERM (15) — graceful stop</span>
+      </div>
+      <div class="code" style="--lc:var(--red);">
+        <span class="pr">$ </span><span class="cm">kill</span> <span class="fl">-9</span> <span class="ar">1234</span>
+        <span class="co"># send SIGKILL — force kill, no cleanup</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">kill</span> <span class="fl">-SIGTERM</span> <span class="ar">1234</span>
+        <span class="co"># same as kill 1234 (by name)</span>
+      </div>
+      <div class="code" style="--lc:var(--orange);">
+        <span class="pr">$ </span><span class="cm">killall</span> <span class="ar">firefox</span>
+        <span class="co"># kill ALL processes named firefox</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">killall</span> <span class="fl">-9</span> <span class="ar">firefox</span>
+        <span class="co"># force kill all firefox processes</span>
+      </div>
+      <div class="code" style="--lc:var(--pink);">
+        <span class="pr">$ </span><span class="cm">pkill</span> <span class="ar">httpd</span>
+        <span class="co"># kill by name pattern</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">pkill</span> <span class="fl">-u</span> <span class="ar">ali</span>
+        <span class="co"># kill ALL processes owned by ali</span>
+      </div>
+      <div class="note"><strong>Rule:</strong> Always try <strong>SIGTERM (15)</strong> first — gives process time to clean up. Use <strong>SIGKILL (9)</strong> only if it doesn't respond.</div>
+    </div>
+  </div>
+
+  <!-- JOBS — FG BG -->
+  <div class="card s2" style="--lc:var(--cyan);">
+    <div class="ch"><span class="ci">🔄</span><h2>Jobs — Foreground &amp; Background</h2><div class="cdot" style="background:var(--cyan);"></div></div>
+    <div class="cb">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">sleep</span> <span class="ar">300</span> <span class="fl">&amp;</span>
+            <span class="co"># run in BACKGROUND from start</span>
+            <span class="ou">[1] 4321  ← job# and PID</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">jobs</span>
+            <span class="co"># list all background jobs</span>
+            <span class="ou">[1]+ Running   sleep 300 &amp;
+[2]- Stopped  vim file.txt</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">fg</span>
+            <span class="co"># bring latest job to FOREGROUND</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">fg</span> <span class="ar">%1</span>
+            <span class="co"># bring job #1 to foreground</span>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div class="code">
+            <span class="co"># While a process is running:</span>
+            <span class="hly">Ctrl+Z</span>  <span class="co">→ suspend (stop) it</span>
+            <span class="hly">Ctrl+C</span>  <span class="co">→ terminate it (SIGINT)</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">bg</span>
+            <span class="co"># resume suspended job in BACKGROUND</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">bg</span> <span class="ar">%2</span>
+            <span class="co"># resume job #2 in background</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">nohup</span> <span class="ar">script.sh</span> <span class="fl">&amp;</span>
+            <span class="co"># run immune to hangup (survives logout)</span>
+            <span class="ou">Output: nohup.out</span>
+          </div>
+        </div>
+      </div>
+      <div class="tip"><strong>Flow:</strong> run command → <span style="color:var(--yellow);">Ctrl+Z</span> to suspend → <code>bg</code> to push background → <code>fg</code> to bring back</div>
+    </div>
+  </div>
+
+  <!-- NICE / RENICE -->
+  <div class="card" style="--lc:var(--pink);">
+    <div class="ch"><span class="ci">🎚️</span><h2>nice &amp; renice</h2><div class="cdot" style="background:var(--pink);"></div></div>
+    <div class="cb">
+      <div style="background:#050709; border:1px solid var(--border); border-radius:4px; overflow:hidden; margin-bottom:4px;">
+        <div style="padding:8px 12px; font-family:var(--mono); font-size:10px; color:var(--muted); border-bottom:1px solid var(--border);">NICE SCALE — lower = higher priority</div>
+        <div class="nice-scale">
+          <div class="ns-box" style="background:rgba(255,68,68,.15);"><span style="color:var(--red); font-family:var(--mono); font-weight:700;">-20</span><span class="ns-label">highest<br>priority</span></div>
+          <div class="ns-box" style="background:rgba(255,123,37,.08);"><span style="color:var(--orange); font-family:var(--mono);">-10</span><span class="ns-label">high</span></div>
+          <div class="ns-box" style="background:rgba(0,229,255,.06);"><span style="color:var(--cyan); font-family:var(--mono);">0</span><span class="ns-label">default</span></div>
+          <div class="ns-box" style="background:rgba(105,255,71,.05);"><span style="color:var(--green); font-family:var(--mono);">+10</span><span class="ns-label">low</span></div>
+          <div class="ns-box" style="background:rgba(105,255,71,.08);"><span style="color:var(--green); font-family:var(--mono); font-weight:700;">+19</span><span class="ns-label">lowest<br>priority</span></div>
+        </div>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">nice</span> <span class="fl">-n 10</span> <span class="ar">./backup.sh</span>
+        <span class="co"># start with low priority (nice 10)</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">nice</span> <span class="fl">-n -5</span> <span class="ar">./critical.sh</span>
+        <span class="co"># start with high priority (root only)</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">renice</span> <span class="fl">-n 15</span> <span class="ar">1234</span>
+        <span class="co"># change priority of running PID 1234</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">renice</span> <span class="fl">-n 5 -u</span> <span class="ar">ali</span>
+        <span class="co"># renice ALL of ali's processes</span>
+      </div>
+      <div class="note"><strong>Note:</strong> Regular users can only <em>increase</em> nice (lower priority). Only <strong>root</strong> can decrease nice (raise priority).</div>
+    </div>
+  </div>
+
+  <!-- PGREP / PSTREE -->
+  <div class="card" style="--lc:var(--blue);">
+    <div class="ch"><span class="ci">🔍</span><h2>pgrep · pstree · uptime</h2><div class="cdot" style="background:var(--blue);"></div></div>
+    <div class="cb">
+      <div class="code" style="--lc:var(--blue);">
+        <span class="pr">$ </span><span class="cm">pgrep</span> <span class="ar">sshd</span>
+        <span class="co"># find PIDs of processes named sshd</span>
+        <span class="ou">1234
+1356</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">pgrep</span> <span class="fl">-u</span> <span class="ar">ali</span>
+        <span class="co"># all PIDs owned by ali</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">pgrep</span> <span class="fl">-la</span> <span class="ar">ssh</span>
+        <span class="co"># list PID + full command name</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">pstree</span>
+        <span class="co"># show process tree (parent→child)</span>
+        <span class="ou">systemd─┬─sshd───bash───pstree
+        └─NetworkManager</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">uptime</span>
+        <span class="co"># system uptime + load average</span>
+        <span class="ou">10:45  up 2 days,  load average: 0.12, 0.08, 0.05</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMAND SUMMARY TABLE -->
+  <div class="card s3">
+    <div class="ch"><span class="ci">⚡</span><h2>Command Quick Reference</h2><div class="cdot" style="background:var(--yellow);"></div></div>
+    <div class="cb" style="padding:0;">
+      <table>
+        <thead>
+          <tr><th>Command</th><th>Key Options</th><th>What It Does</th><th>Example</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="tc">ps aux</td><td class="ta">--sort=-%cpu/-%mem</td><td class="td2">Snapshot of ALL running processes</td><td class="tc" style="font-size:10.5px;">ps aux --sort=-%cpu</td></tr>
+          <tr><td class="tc">ps -ef</td><td class="ta">grep pattern</td><td class="td2">Full format — shows PPID</td><td class="tc" style="font-size:10.5px;">ps -ef | grep httpd</td></tr>
+          <tr><td class="tc">top</td><td class="ta">-u user  -p PID</td><td class="td2">Live interactive process monitor</td><td class="tc" style="font-size:10.5px;">top -u ali</td></tr>
+          <tr><td class="tc">kill</td><td class="ta">-9  -15  -1</td><td class="td2">Send signal to PID</td><td class="tc" style="font-size:10.5px;">kill -9 1234</td></tr>
+          <tr><td class="tc">killall</td><td class="ta">-9  -u user</td><td class="td2">Kill all processes by name</td><td class="tc" style="font-size:10.5px;">killall firefox</td></tr>
+          <tr><td class="tc">pkill</td><td class="ta">-u  -t  -9</td><td class="td2">Kill by name pattern or user</td><td class="tc" style="font-size:10.5px;">pkill -u ali</td></tr>
+          <tr><td class="tc">pgrep</td><td class="ta">-u  -l  -a</td><td class="td2">Find PIDs by name/user</td><td class="tc" style="font-size:10.5px;">pgrep -u ali</td></tr>
+          <tr><td class="tc">pstree</td><td class="ta">-p  -u</td><td class="td2">Process tree — parent/child view</td><td class="tc" style="font-size:10.5px;">pstree -p</td></tr>
+          <tr><td class="tc">nice</td><td class="ta">-n value</td><td class="td2">Start process with priority</td><td class="tc" style="font-size:10.5px;">nice -n 10 ./script.sh</td></tr>
+          <tr><td class="tc">renice</td><td class="ta">-n -u -p</td><td class="td2">Change priority of running process</td><td class="tc" style="font-size:10.5px;">renice -n 5 1234</td></tr>
+          <tr><td class="tc">jobs</td><td class="ta">-l</td><td class="td2">List background/suspended jobs</td><td class="tc" style="font-size:10.5px;">jobs -l</td></tr>
+          <tr><td class="tc">fg / bg</td><td class="ta">%job#</td><td class="td2">Bring job to front / send to back</td><td class="tc" style="font-size:10.5px;">fg %1 / bg %2</td></tr>
+          <tr><td class="tc">nohup</td><td class="ta">&amp;</td><td class="td2">Run immune to logout/hangup</td><td class="tc" style="font-size:10.5px;">nohup script.sh &amp;</td></tr>
+          <tr><td class="tc">uptime</td><td class="ta">—</td><td class="td2">System uptime + load average</td><td class="tc" style="font-size:10.5px;">uptime</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EXAM TIPS -->
+  <div class="card s3">
+    <div class="ch"><span class="ci">🏆</span><h2>Exam Tips</h2><div class="cdot" style="background:var(--orange);"></div></div>
+    <div class="cb">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div class="tips">
+          <div class="ti"><span class="ttag tw">⚠ KILL</span><span>Always try <code style="color:var(--yellow);">kill -15</code> (SIGTERM) first. Use <code style="color:var(--red);">kill -9</code> only as last resort — it skips cleanup!</span></div>
+          <div class="ti"><span class="ttag th">🎚 NICE</span><span>Regular users can only <strong>raise</strong> nice value (lower priority). Only <strong>root</strong> can lower nice (raise priority).</span></div>
+          <div class="ti"><span class="ttag tk">✔ JOBS</span><span><code style="color:var(--cyan);">Ctrl+Z</code> suspends, <code style="color:var(--cyan);">bg</code> resumes in background, <code style="color:var(--cyan);">fg</code> brings to foreground.</span></div>
+          <div class="ti"><span class="ttag ti2">📖 PS</span><span><code style="color:var(--yellow);">ps aux</code> uses BSD syntax (no dash). <code style="color:var(--yellow);">ps -ef</code> uses UNIX syntax (with dash). Both show all processes.</span></div>
+        </div>
+        <div class="tips">
+          <div class="ti"><span class="ttag tw">⚠ ZOMBIE</span><span>A <strong style="color:var(--red);">Z (zombie)</strong> process is already dead — you cannot kill it. Kill its <strong>parent</strong> (PPID) to remove it.</span></div>
+          <div class="ti"><span class="ttag th">💡 LOAD</span><span>Load average shows 1/5/15 min averages. Value = number of CPUs means 100% busy. Above = overloaded.</span></div>
+          <div class="ti"><span class="ttag tk">✔ NOHUP</span><span><code style="color:var(--cyan);">nohup cmd &amp;</code> keeps process running after you log out. Output goes to <code>nohup.out</code>.</span></div>
+          <div class="ti"><span class="ttag ti2">🔍 PGREP</span><span>Use <code style="color:var(--yellow);">pgrep -la pattern</code> to find processes before killing — safer than guessing PIDs.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <span>Red Hat System Administration I (RH124) · Chapter 8 · Monitoring &amp; Managing Linux Processes</span>
+  <span>ps · top · kill · killall · pkill · nice · renice · jobs · fg · bg · nohup</span>
+</div>
+
+</body>
+</html>

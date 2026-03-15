@@ -1,0 +1,353 @@
+permission:
+what can u do to files/directories(rwx)
+
+privilege:
+what can u do on system
+
+
+ch:6 --> Managing local users and groups:
+
+root user id=o
+system users id= 1-->999
+normal users id= 1000+
+
+
+important files : /etc/passwd, /etc/shadow, /etc/group, /etc/login.defs
+
+users:
+------
+*useradd -m -c "full name" -g "primery gp" -G "suplmentery gp" -u "id" -s "shell" -d "home directory' username
+
+usermod -aG groupname username 
+to lock and unlock --> -L, -U
+
+*userdel [-r] username
+
+groups:
+-------
+groupadd [-g=id] dataeng
+groupdel groupname
+groupmod -n devteam dev
+
+===================================================================
+ch:7 --> control access file/dir
+
+read = r
+write = w
+execute= x
+
+owner  rwx   u
+group  rwx    g
+other  rwx    o
+
+--------- file/dir
+
+=============================================================================
+                  files                                          directory
+
+
+
+
+ read         cat, more, less, cp, mv                        ls
+
+
+
+
+ write        vi, vim, nano, gedit, cp, rm, ln, tar,...      touch, mv, cp, mkdir, rm, ...
+
+
+ execute      normel files                                  cd 
+              (script)
+
+
+
+file type:
+========
+-   file
+d   direc
+c   character
+b   block device
+l    link 
+
+
+command: chmod
+
+ways:
+1) sympolic --> rwx
+
+2) numeric
+
+read = 4
+write = 2
+execute = 1
+
+chmod    u     g     o        filename
+chmod    6     5     4        path to file
+chmod     7     7     7       file        
+
+
+default permission:
+f   -->  644
+dir  --> 755
+
+full files perm --> 666
+full dir. perm --> 777
+
+umask --> new created files/dir.
+umask = 022
+666- 022  =  644
+777-022=  755
+
+--> 400
+666 - ? = 400
+umask = 266
+
+file --> /etc/profile, /etc/login.defs
+umask 266 (once reboot)
+
+commands  of today:
+-------------------
+[root@localhost ~]# history
+    1  ip a
+    2  su - aya
+    3  history
+    4  cd /
+    5  ls
+    6  ll
+    7  cd /
+    8  ll
+    9  cd
+   10  cd /etc/
+   11  cd ~
+   12  cd ~aya
+   13  cd /home/aya
+   14  ll
+   15  cd /tmp/
+   16  cd -
+   17  ll
+   18  cd /
+   19  ll
+   20  clear
+   21  useradd ahmed
+   22  cat /etc/passwd
+   23  cat /var/log/messages
+   24  cat /etc/passwd
+   25  top
+   26  cat /etc/passwd
+   27  cat /etc/shadow
+   28  passwd ahmed
+   29  cat /etc/shadow
+   30  cat /etc/group
+   31  clear
+   32  useradd -m -c "gamal mohammed" -G wheel -u 1050 -s /bin/bash gamal
+   33  cat /etc/passwd
+   34  useradd -m -d "/data/gammal"  -c "gammal mohammed" -G wheel -u 1051 -s /sbin/nologin gammal
+   35  cat /etc/passwd
+   36  usermod -aG DE gamal
+   37  usermod -s /sbin/nologin gammal
+   38  cat /etc/passwd
+   39  su - aya
+   40  clear
+   41  usermod -L aya
+   42  su - aya
+   43  cat /etc/shadow
+   44  usermod -U aya
+   45  cat /etc/shadow
+   46  usermod -L aya
+   47  su - yehia
+   48  ls -l /home/
+   49  userdel gamal
+   50  ls -l /home/
+   51  cat /etc/passwd
+   52  ls -l /home/
+   53  userdel -r yehia
+   54  ls -l /home/
+   55  ps -aux
+   56  clear
+   57  groupadd dteng
+   58  cat /etc/group | grep dteng
+   59  groupadd -g 2000 dev
+   60  cat /etc/group | grep dev
+   61  usermod -aG dev aya
+   62  cat /etc/group | grep dev
+   63  userdel dteng
+   64  ls -l
+   65  groupdel dteng
+   66  cat /etc/group | grep dteng
+   67  cat /etc/group | grep dev
+   68  groupmod -n devteam dev
+   69  cat /etc/group | grep dev
+   70  clear
+   71  cat /etc/shadow
+   72  cat /etc/shadow | grep aya
+   73  cat /etc/passwd | grep aya
+   74  vim /etc/login.defs
+   75  clear
+   76  cat /etc/passwd | grep aya
+   77  cat /etc/shadow | grep aya
+   78  chage -M 90 -m 10 -w 9 -I 1 aya
+   79  chage -M 90 -m 10 -W 9 -I 1 aya
+   80  chage -M 90 -m 10 -w 9 -I 1 aya
+   81  cat /etc/shadow | grep aya
+   82  clear
+   83  ls -l
+   84  cd /
+   85  ls -l
+   86  clear
+   87  cd
+   88  ll
+   89  chmod u=r,g=rw,o=w allinone.txt
+   90  ll
+   91  chmod u+wx,g+x,o+r allinone.txt
+   92  ll
+   93  clear
+   94  ll
+   95  chmod u-wx,g-wx,o-w allinone.txt
+   96  ll
+   97  chmod u+w allinone.txt
+   98  ll
+   99  vi allinone.txt
+  100  ll
+  101  chmod u+x allinone.txt
+  102  ll
+  103  ./allinone.txt
+  104  source allinone.txt
+  105  bash allinone.txt
+  106  chmod a+rwx
+  107  chmod a+rwx allinone.txt
+  108  ll
+  109  chmod -wx allinone.txt
+  110  ll
+  111  chmod +x err.txt
+  112  ll
+  113  chmod -x err.txt
+  114  ll
+  115  clear
+  116  ll
+  117  chmod 444 allinone.txt
+  118  ll
+  119  chmod 660 allinone.txt
+  120  ll
+  121  chmod 400 newtxt
+  122  ll
+  123  touch f1
+  124  ls -l
+  125  clear
+  126  ll
+  127  chmod 777  ts/
+  128  ll
+  129  cd ts/
+  130  ll
+  131  mkdir -p dir1/dir2
+  132  ll
+  133  cd
+  134  ll
+  135  clear
+  136  ll | grep ts
+  137  chmod 444 ts
+  138  ll | grep ts
+  139  ls -l ts/dir1/
+  140  ls -ld ts/dir1/
+  141  chmod -R 666 ts
+  142  ll | grep ts
+  143  ls -ld ts/dir1/
+  144  ls -ld ts/dir1/dir2/
+  145  vim /etc/profile
+  146  vim ~/.bashrc
+  147  vim /etc/profile
+  148  ll
+  149  touch f3
+  150  ll
+  151  umask 266
+  152  touch masking
+  153  ll
+  154  vim /etc/login.defs
+  155  grep -i ^umask /etc/login.defs  /etc/init.d/functions
+  156  vim /etc/login.defs
+  157  umask 022
+  158  touch f2
+  159  ll
+  160  vim /etc/login.defs
+  161  logout
+  162  touch aftrlg
+  163  ll
+  164  umask 666
+  165  touch beforelogin
+  166  ll
+  167  touch afterlogin
+  168  ll
+  169  vim /etc/login.defs
+  170  history
+
+
+
+Lab permissions:
+==============
+1. Create a user account with the following attribute 
+Username: yourname
+Fullname/comment: yourname iti 
+Password: yourname
+2. 
+Create a user account with the following attribute 
+Username: baduser 
+Full name/comment: Bad User 
+Password: baduser
+3. Create a supplementary (Secondary) group called pgroup with group ID of 30000 
+4. Create a supplementary group called badgroup 
+5. Add yourname user to the pgroup group as a supplementary group 
+6. Modify the password of yourname’s account to password 
+7. Modify yourname’s account so the password expires after 30 days 
+8. Lock bad user account so he can't log in 
+9. Delete bad user account 
+10. Delete the supplementary group called badgroup.
+11. Create a folder called myteam in your home directory and change its permissions to 
+read only for the owner. 
+12. Log out and log in by another user 
+13. Try to access (by cd command) the folder (myteam) 
+14. Using the command Line: Change the permissions of oldpasswd file to give owner 
+read 
+and write permissions and for group write and execute and execute only for the others 
+(using chmod in 2 different ways) 
+15. Change your default permissions to be no permission to everyone then create a 
+directory and a file to verify
+16. Create a file with permission 444. Try to edit in it and to remove it? Note what 
+happened 
+17. What is the difference between the “x” permission for a file and for a directory? 
+18. What are the minimum permission needed for: 
+Copy a directory (permission for source directory and permissions for target parent 
+directory) 
+Copy a file (permission for source file and and permission for target parent directory) 
+Delete a file 
+Change to a directory 
+List a directory content (ls command) 
+View a file content (more/cat command) 
+Modify a file content
+VIM Editor:
+Command to install vim → dnf install vim -y
+1. Using vi write your CV in the file mycv. Your CV should include your name, age, 
+school, college, experience,... 
+2. Open mycv file using vi command then: Without using arrows state how to: 
+a. Move the cursor down one line at time. 
+b. Move the cursor up one line at time. 
+c. Search for word age 
+d. Step to line 5 (assuming that you are in line 1 and file is more than 5 lines). 
+e. Delete the line you are on and line 5. 
+f. How to step to the end of line and change to writing mode in one-step
+3. List the available shells in your system. 
+4. List the environment variables in your current shell. 
+5. What are the commands that list the value of a specific variable? 
+6. Execute the following command : 
+echo \ then press enter 
+What is the purpose of \ ? 
+Notice the prompt ”>” what is that? and how can you change it from “>” to “:”.
+7. Create a Bash shell alias named ls for the “ls –lta” command
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RH124 Ch15 – Accessing Linux File Systems</title>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Oxanium:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#050608; --panel:#090b0d; --panel2:#0c0e10;
+    --border:#141b20; --text:#cad8e2; --muted:#2d4050;
+    --emerald:#00ff9f; --cyan:#00d4ff; --yellow:#ffe566;
+    --orange:#ff8c42; --red:#ff4560; --purple:#bf80ff;
+    --blue:#4d9fff; --pink:#ff6eb4; --teal:#00e5cc;
+    --mono:'Courier Prime',monospace; --sans:'Oxanium',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);padding:24px;font-size:13px;}
+
+  /* HEADER */
+  .header{display:flex;align-items:center;gap:18px;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border);position:relative;}
+  .header::after{content:'';position:absolute;bottom:-1px;left:0;width:250px;height:2px;background:linear-gradient(90deg,var(--emerald),transparent);}
+  .hico{width:52px;height:52px;border-radius:8px;background:rgba(0,255,159,.07);border:1px solid rgba(0,255,159,.22);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;}
+  .htx h1{font-size:26px;font-weight:800;}
+  .htx h1 em{color:var(--emerald);font-style:normal;}
+  .htx p{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:4px;}
+  .hbadge{margin-left:auto;font-family:var(--mono);font-size:10px;padding:5px 13px;border-radius:3px;background:rgba(0,255,159,.07);color:var(--emerald);border:1px solid rgba(0,255,159,.2);}
+
+  /* LAYOUT */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .s2{grid-column:span 2;} .s3{grid-column:span 3;}
+
+  /* CARD */
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+  .ch{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--panel2);}
+  .ch h2{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:var(--muted);}
+  .cdot{width:6px;height:6px;border-radius:50%;margin-left:auto;flex-shrink:0;}
+  .cb{padding:14px;display:flex;flex-direction:column;gap:10px;}
+
+  /* CODE */
+  .code{background:#030507;border:1px solid #0d1820;border-left:3px solid var(--lc,var(--emerald));border-radius:3px;padding:9px 13px;font-family:var(--mono);font-size:12px;line-height:1.9;}
+  .pr{color:var(--emerald);}
+  .cm{color:var(--yellow);}
+  .fl{color:var(--orange);}
+  .ar{color:var(--cyan);}
+  .co{color:#1a2e3a;font-size:10.5px;display:block;margin-top:1px;}
+  .ou{color:#243545;font-size:11px;display:block;margin-top:4px;padding-top:4px;border-top:1px solid #0d1820;}
+  .hl {color:var(--emerald);}
+  .hlc{color:var(--cyan);}
+  .hly{color:var(--yellow);}
+  .hlo{color:var(--orange);}
+  .hlr{color:var(--red);}
+  .hlp{color:var(--purple);}
+
+  /* NOTE/TIP/WARN */
+  .note{background:rgba(255,140,66,.06);border:1px solid rgba(255,140,66,.18);border-left:3px solid var(--orange);border-radius:3px;padding:9px 13px;font-size:11.5px;line-height:1.65;color:#b89880;}
+  .note strong{color:var(--orange);}
+  .tip{background:rgba(0,255,159,.05);border:1px solid rgba(0,255,159,.15);border-left:3px solid var(--emerald);border-radius:3px;padding:9px 13px;font-size:11.5px;line-height:1.65;color:#90b8a0;}
+  .tip strong{color:var(--emerald);}
+  .warn{background:rgba(255,69,96,.06);border:1px solid rgba(255,69,96,.18);border-left:3px solid var(--red);border-radius:3px;padding:9px 13px;font-size:11.5px;line-height:1.65;color:#b08090;}
+  .warn strong{color:var(--red);}
+
+  /* TABLE */
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;}
+  th{background:#070a0d;color:var(--muted);font-size:9.5px;text-transform:uppercase;letter-spacing:1px;padding:7px 11px;text-align:left;border-bottom:1px solid var(--border);}
+  td{padding:6px 11px;border-bottom:1px solid #0d1820;vertical-align:top;line-height:1.55;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#090d12;}
+  .tc{color:var(--yellow);} .ta{color:var(--cyan);} .tg{color:var(--emerald);}
+  .tr2{color:var(--red);} .td2{color:#5a8aaa;font-size:10.5px;} .to{color:var(--orange);}
+  .tp{color:var(--purple);}
+
+  /* FILESYSTEM TREE */
+  .fstree{background:#030507;border:1px solid var(--border);border-radius:4px;padding:13px;font-family:var(--mono);font-size:11.5px;line-height:2;}
+  .fstree .dir{color:var(--cyan);}
+  .fstree .desc{color:var(--muted);font-size:10.5px;}
+  .fstree .imp{color:var(--yellow);}
+
+  /* FSTAB FILE BLOCK */
+  .fblock{background:#030507;border:1px solid var(--border);border-left:3px solid var(--lc2,var(--emerald));border-radius:3px;padding:10px 13px;font-family:var(--mono);font-size:11.5px;line-height:1.9;}
+  .fpath{color:var(--cyan);font-size:10px;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+  .fk{color:var(--yellow);} .fv{color:var(--emerald);} .fc{color:#1a2e3a;font-size:10px;}
+
+  /* COLUMN BOXES */
+  .col-boxes{display:grid;gap:5px;}
+  .col-box{background:#030507;border:1px solid var(--border);border-radius:3px;padding:7px 11px;font-family:var(--mono);font-size:11px;display:flex;gap:10px;}
+  .col-num{color:var(--purple);font-weight:700;width:16px;flex-shrink:0;}
+  .col-name{color:var(--yellow);width:100px;flex-shrink:0;}
+  .col-desc{color:var(--muted);font-size:10.5px;}
+
+  /* EXAM TIPS */
+  .tips{display:flex;flex-direction:column;gap:8px;}
+  .ti{display:flex;gap:10px;align-items:flex-start;font-size:11.5px;line-height:1.6;}
+  .ttag{font-family:var(--mono);font-size:9.5px;padding:2px 8px;border-radius:2px;flex-shrink:0;margin-top:2px;}
+  .tw{background:rgba(255,69,96,.12);color:#ff8899;border:1px solid rgba(255,69,96,.25);}
+  .tk{background:rgba(0,255,159,.1);color:var(--emerald);border:1px solid rgba(0,255,159,.25);}
+  .ti2{background:rgba(0,212,255,.1);color:var(--cyan);border:1px solid rgba(0,212,255,.25);}
+  .th{background:rgba(255,229,102,.1);color:var(--yellow);border:1px solid rgba(255,229,102,.25);}
+
+  .footer{margin-top:18px;padding-top:12px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:#182028;display:flex;justify-content:space-between;}
+
+  @media(max-width:900px){.grid{grid-template-columns:1fr 1fr;}.s2,.s3{grid-column:span 2;}}
+  @media(max-width:580px){.grid{grid-column:span 1;}.s2,.s3{grid-column:span 1;}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="hico">💽</div>
+  <div class="htx">
+    <h1>RH124 <em>Chapter 15</em></h1>
+    <p>Accessing Linux File Systems · mount · umount · lsblk · df · fstab</p>
+  </div>
+  <div class="hbadge">RHCSA Prep</div>
+</div>
+
+<div class="grid">
+
+  <!-- FILESYSTEM CONCEPTS -->
+  <div class="card">
+    <div class="ch"><span>🧠</span><h2>Key Concepts</h2><div class="cdot" style="background:var(--emerald);"></div></div>
+    <div class="cb">
+      <table>
+        <tr><th>Term</th><th>Meaning</th></tr>
+        <tr><td class="tc">filesystem</td><td class="td2">Method of organizing data on a disk (ext4, xfs, vfat)</td></tr>
+        <tr><td class="tc">block device</td><td class="td2">Storage device — disk, partition, LVM volume</td></tr>
+        <tr><td class="tc">mount</td><td class="td2">Attach a filesystem to a directory (mount point)</td></tr>
+        <tr><td class="tc">mount point</td><td class="td2">Directory where the filesystem is attached</td></tr>
+        <tr><td class="tc">umount</td><td class="td2">Detach a mounted filesystem</td></tr>
+        <tr><td class="tc">UUID</td><td class="td2">Unique ID for a partition — safer than /dev/sda1</td></tr>
+        <tr><td class="tc">label</td><td class="td2">Human-readable name assigned to a partition</td></tr>
+        <tr><td class="tc">/etc/fstab</td><td class="td2">Permanent mount config — mounts at every boot</td></tr>
+        <tr><td class="tc">inode</td><td class="td2">Data structure storing file metadata (not name/data)</td></tr>
+        <tr><td class="tc">hard link</td><td class="td2">Another name pointing to same inode</td></tr>
+        <tr><td class="tc">soft link</td><td class="td2">Symbolic link — pointer to another file path</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- FILESYSTEM TYPES -->
+  <div class="card">
+    <div class="ch"><span>🗂️</span><h2>Filesystem Types</h2><div class="cdot" style="background:var(--cyan);"></div></div>
+    <div class="cb">
+      <table>
+        <tr><th>Type</th><th>Use</th></tr>
+        <tr><td class="tc">xfs</td><td class="td2">Default on RHEL 9 — fast, scalable, large files</td></tr>
+        <tr><td class="tc">ext4</td><td class="td2">Common Linux FS — reliable, widely supported</td></tr>
+        <tr><td class="tc">vfat</td><td class="td2">FAT32 — USB drives, Windows compatibility</td></tr>
+        <tr><td class="tc">exfat</td><td class="td2">Extended FAT — large USB/SD cards</td></tr>
+        <tr><td class="tc">iso9660</td><td class="td2">CD/DVD / ISO images</td></tr>
+        <tr><td class="tc">tmpfs</td><td class="td2">RAM-based filesystem (lost on reboot)</td></tr>
+        <tr><td class="tc">nfs</td><td class="td2">Network File System — remote share</td></tr>
+        <tr><td class="tc">swap</td><td class="td2">Virtual memory / swap space</td></tr>
+      </table>
+      <div class="tip"><strong>RHEL 9 default:</strong> <code>xfs</code> for / (root) and data partitions. <code>vfat</code> for /boot/efi. Know these for the exam!</div>
+    </div>
+  </div>
+
+  <!-- BLOCK DEVICES -->
+  <div class="card" style="--lc:var(--yellow);">
+    <div class="ch"><span>💿</span><h2>Block Device Naming</h2><div class="cdot" style="background:var(--yellow);"></div></div>
+    <div class="cb">
+      <table>
+        <tr><th>Device</th><th>Meaning</th></tr>
+        <tr><td class="tc">/dev/sda</td><td class="td2">First SATA/SCSI disk</td></tr>
+        <tr><td class="tc">/dev/sda1</td><td class="td2">First partition of first disk</td></tr>
+        <tr><td class="tc">/dev/sda2</td><td class="td2">Second partition of first disk</td></tr>
+        <tr><td class="tc">/dev/sdb</td><td class="td2">Second disk</td></tr>
+        <tr><td class="tc">/dev/vda</td><td class="td2">Virtual disk (KVM/cloud)</td></tr>
+        <tr><td class="tc">/dev/nvme0n1</td><td class="td2">First NVMe SSD</td></tr>
+        <tr><td class="tc">/dev/nvme0n1p1</td><td class="td2">First partition of NVMe</td></tr>
+        <tr><td class="tc">/dev/sr0</td><td class="td2">CD/DVD-ROM drive</td></tr>
+      </table>
+      <div class="code" style="--lc:var(--yellow);">
+        <span class="pr">$ </span><span class="cm">lsblk</span>
+        <span class="co"># list all block devices as tree</span>
+        <span class="ou"><span class="hly">NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT</span>
+sda      8:0    0   20G  0 disk
+├─sda1   8:1    0    1G  0 part /boot
+└─sda2   8:2    0   19G  0 part /</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- IDENTIFYING FILESYSTEMS -->
+  <div class="card s2" style="--lc:var(--cyan);">
+    <div class="ch"><span>🔍</span><h2>Identifying &amp; Inspecting Filesystems</h2><div class="cdot" style="background:var(--cyan);"></div></div>
+    <div class="cb">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="code" style="--lc:var(--cyan);">
+            <span class="pr">$ </span><span class="cm">lsblk</span>
+            <span class="co"># block device tree — quick overview</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">lsblk</span> <span class="fl">-f</span>
+            <span class="co"># show filesystem type + UUID + label</span>
+            <span class="ou"><span class="hlc">NAME  FSTYPE  LABEL  UUID                   MOUNTPOINT</span>
+sda1  xfs           a1b2-...  /boot
+sda2  xfs           c3d4-...  /</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">blkid</span>
+            <span class="co"># show UUID and type of all block devices</span>
+            <span class="ou">/dev/sda1: UUID="a1b2-..." TYPE="xfs"
+/dev/sda2: UUID="c3d4-..." TYPE="xfs"</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">blkid</span> <span class="ar">/dev/sda1</span>
+            <span class="co"># UUID of specific partition</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="code" style="--lc:var(--emerald);">
+            <span class="pr">$ </span><span class="cm">df</span> <span class="fl">-h</span>
+            <span class="co"># disk space usage (human readable)</span>
+            <span class="ou"><span class="hly">Filesystem  Size  Used Avail Use% Mounted on</span>
+/dev/sda2    19G   5G   14G  27% /
+/dev/sda1   1.0G  200M  800M  20% /boot
+tmpfs       3.8G     0  3.8G   0% /dev/shm</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">df</span> <span class="fl">-hT</span>
+            <span class="co"># disk space + filesystem TYPE</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">du</span> <span class="fl">-sh</span> <span class="ar">/var/log/</span>
+            <span class="co"># disk usage of a directory</span>
+            <span class="ou">245M  /var/log/</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">du</span> <span class="fl">-sh</span> <span class="ar">/var/log/*</span>
+            <span class="co"># size of each item in directory</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANUAL MOUNT -->
+  <div class="card" style="--lc:var(--orange);">
+    <div class="ch"><span>🔗</span><h2>mount — Manual Mounting</h2><div class="cdot" style="background:var(--orange);"></div></div>
+    <div class="cb">
+      <div class="code" style="--lc:var(--orange);">
+        <span class="pr">$ </span><span class="cm">mount</span> <span class="ar">/dev/sdb1 /mnt/data</span>
+        <span class="co"># mount partition to /mnt/data</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">mount</span> <span class="fl">-t</span> <span class="ar">xfs /dev/sdb1 /mnt/data</span>
+        <span class="co"># specify filesystem type</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">mount</span> <span class="fl">-t</span> <span class="ar">iso9660 /dev/sr0 /mnt/cdrom</span>
+        <span class="co"># mount CD/DVD</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">mount</span> <span class="fl">-o</span> <span class="ar">ro /dev/sdb1 /mnt/data</span>
+        <span class="co"># mount READ-ONLY</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">mount</span> <span class="fl">-o</span> <span class="ar">remount,rw /mnt/data</span>
+        <span class="co"># remount as read-write</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">mount</span>
+        <span class="co"># show ALL currently mounted filesystems</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">mount</span> <span class="fl">| grep</span> <span class="ar">sdb</span>
+        <span class="co"># check if specific device is mounted</span>
+      </div>
+      <div class="warn"><strong>Manual mounts are temporary</strong> — lost after reboot! Add to /etc/fstab for permanent mounting.</div>
+    </div>
+  </div>
+
+  <!-- UMOUNT -->
+  <div class="card" style="--lc:var(--red);">
+    <div class="ch"><span>⏏️</span><h2>umount — Unmounting</h2><div class="cdot" style="background:var(--red);"></div></div>
+    <div class="cb">
+      <div class="code" style="--lc:var(--red);">
+        <span class="pr">$ </span><span class="cm">umount</span> <span class="ar">/mnt/data</span>
+        <span class="co"># unmount by mount point</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">umount</span> <span class="ar">/dev/sdb1</span>
+        <span class="co"># unmount by device name</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">umount</span> <span class="fl">-l</span> <span class="ar">/mnt/data</span>
+        <span class="co"># lazy unmount — detaches when not busy</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">umount</span> <span class="fl">-f</span> <span class="ar">/mnt/data</span>
+        <span class="co"># force unmount (NFS/network filesystems)</span>
+      </div>
+      <div class="note"><strong>Cannot unmount busy filesystem!</strong> If you get "target is busy" — find what's using it:</div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">lsof</span> <span class="ar">/mnt/data</span>
+        <span class="co"># list open files on that mount</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">fuser</span> <span class="fl">-m</span> <span class="ar">/mnt/data</span>
+        <span class="co"># show PIDs using the mount point</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- /etc/fstab -->
+  <div class="card s3" style="--lc:var(--purple);">
+    <div class="ch"><span>📄</span><h2>/etc/fstab — Permanent Mounts</h2><div class="cdot" style="background:var(--purple);"></div></div>
+    <div class="cb">
+      <div class="fblock" style="--lc2:var(--purple);">
+        <span class="fpath">/etc/fstab — 6 fields per line</span>
+        <span style="color:#1a2e3a;"># Device&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Mount&nbsp;&nbsp;&nbsp;Type&nbsp;&nbsp;Options&nbsp;&nbsp;Dump&nbsp;Pass</span><br>
+        <span class="fk">UUID=a1b2-c3d4</span>&nbsp;&nbsp;&nbsp;<span class="fv">/boot</span>&nbsp;&nbsp;&nbsp;<span class="fk">xfs</span>&nbsp;&nbsp;&nbsp;<span class="fv">defaults</span>&nbsp;&nbsp;<span class="fk">0</span>&nbsp;&nbsp;&nbsp;<span class="fk">0</span><br>
+        <span class="fk">UUID=e5f6-g7h8</span>&nbsp;&nbsp;&nbsp;<span class="fv">/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="fk">xfs</span>&nbsp;&nbsp;&nbsp;<span class="fv">defaults</span>&nbsp;&nbsp;<span class="fk">0</span>&nbsp;&nbsp;&nbsp;<span class="fk">0</span><br>
+        <span class="fk">/dev/sdb1</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="fv">/data</span>&nbsp;&nbsp;&nbsp;<span class="fk">xfs</span>&nbsp;&nbsp;&nbsp;<span class="fv">defaults</span>&nbsp;&nbsp;<span class="fk">0</span>&nbsp;&nbsp;&nbsp;<span class="fk">0</span><br>
+        <span class="fk">/dev/sdc1</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="fv">/backup</span>&nbsp;<span class="fk">ext4</span>&nbsp;&nbsp;<span class="fv">ro,noexec</span>&nbsp;<span class="fk">0</span>&nbsp;&nbsp;&nbsp;<span class="fk">0</span><br>
+        <span class="fk">/dev/sr0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="fv">/mnt/cd</span>&nbsp;<span class="fk">iso9660</span> <span class="fv">ro,noauto</span>&nbsp;<span class="fk">0</span>&nbsp;&nbsp;&nbsp;<span class="fk">0</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <div class="col-boxes">
+            <div style="color:var(--muted);font-size:9.5px;text-transform:uppercase;letter-spacing:1px;padding:4px 11px;">fstab field explanations</div>
+            <div class="col-box"><span class="col-num">1</span><span class="col-name" style="color:var(--yellow);">Device</span><span class="col-desc">UUID=... or /dev/sda1 or LABEL=name</span></div>
+            <div class="col-box"><span class="col-num">2</span><span class="col-name" style="color:var(--cyan);">Mount Point</span><span class="col-desc">Directory to mount on (/ /boot /data)</span></div>
+            <div class="col-box"><span class="col-num">3</span><span class="col-name" style="color:var(--emerald);">FS Type</span><span class="col-desc">xfs · ext4 · vfat · swap · iso9660</span></div>
+            <div class="col-box"><span class="col-num">4</span><span class="col-name" style="color:var(--orange);">Options</span><span class="col-desc">defaults · ro · noexec · noauto · _netdev</span></div>
+            <div class="col-box"><span class="col-num">5</span><span class="col-name" style="color:var(--purple);">Dump</span><span class="col-desc">0=no backup, 1=backup (legacy, use 0)</span></div>
+            <div class="col-box"><span class="col-num">6</span><span class="col-name" style="color:var(--pink);">Pass</span><span class="col-desc">fsck order: 0=skip, 1=root, 2=others</span></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <table>
+            <tr><th>Mount Option</th><th>Meaning</th></tr>
+            <tr><td class="tc">defaults</td><td class="td2">rw,suid,dev,exec,auto,nouser,async</td></tr>
+            <tr><td class="tc">ro</td><td class="td2">Read-only mount</td></tr>
+            <tr><td class="tc">rw</td><td class="td2">Read-write mount</td></tr>
+            <tr><td class="tc">noexec</td><td class="td2">Cannot run executables from this mount</td></tr>
+            <tr><td class="tc">noauto</td><td class="td2">Don't mount at boot automatically</td></tr>
+            <tr><td class="tc">_netdev</td><td class="td2">Wait for network before mounting (NFS)</td></tr>
+            <tr><td class="tc">nofail</td><td class="td2">Don't fail boot if device missing</td></tr>
+            <tr><td class="tc">user</td><td class="td2">Allow regular users to mount</td></tr>
+          </table>
+          <div class="code" style="--lc:var(--emerald);">
+            <span class="pr">$ </span><span class="cm">mount</span> <span class="fl">-a</span>
+            <span class="co"># mount ALL entries in /etc/fstab</span>
+            <span class="co"># use to TEST fstab without rebooting</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">systemctl</span> <span class="fl">daemon-reload</span>
+            <span class="co"># reload after editing /etc/fstab</span>
+          </div>
+        </div>
+      </div>
+      <div class="warn"><strong>Bad /etc/fstab = system won't boot!</strong> Always test with <code>mount -a</code> after editing. Use UUID instead of /dev/sda1 — device names can change!</div>
+    </div>
+  </div>
+
+  <!-- LINKS -->
+  <div class="card s2" style="--lc:var(--pink);">
+    <div class="ch"><span>🔗</span><h2>Hard Links &amp; Soft (Symbolic) Links</h2><div class="cdot" style="background:var(--pink);"></div></div>
+    <div class="cb">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="color:var(--pink);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;">Hard Link</div>
+          <div style="background:#030507;border:1px solid var(--border);border-radius:4px;padding:10px;font-family:var(--mono);font-size:11px;line-height:1.8;text-align:center;">
+            <div style="color:var(--cyan);">file.txt</div>
+            <div style="color:var(--muted);">↓ same inode</div>
+            <div style="color:var(--pink);">hardlink.txt</div>
+            <div style="color:#1a2e3a;font-size:10px;margin-top:4px;">both point to same data block</div>
+          </div>
+          <div class="code" style="--lc:var(--pink);">
+            <span class="pr">$ </span><span class="cm">ln</span> <span class="ar">file.txt hardlink.txt</span>
+            <span class="co"># create hard link</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">ls</span> <span class="fl">-li</span> <span class="ar">file.txt hardlink.txt</span>
+            <span class="co"># same inode number!</span>
+            <span class="ou"><span class="hlp">123456</span> -rw-r--r-- <span class="hly">2</span> ali ali file.txt
+<span class="hlp">123456</span> -rw-r--r-- <span class="hly">2</span> ali ali hardlink.txt</span>
+          </div>
+          <table>
+            <tr><th colspan="2">Hard Link Rules</th></tr>
+            <tr><td class="tg">✔</td><td class="td2">Works on same filesystem only</td></tr>
+            <tr><td class="tg">✔</td><td class="td2">Data survives if original deleted</td></tr>
+            <tr><td class="tr2">✘</td><td class="td2">Cannot link to directories</td></tr>
+            <tr><td class="tr2">✘</td><td class="td2">Cannot cross filesystems</td></tr>
+          </table>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="color:var(--teal);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;">Soft (Symbolic) Link</div>
+          <div style="background:#030507;border:1px solid var(--border);border-radius:4px;padding:10px;font-family:var(--mono);font-size:11px;line-height:1.8;text-align:center;">
+            <div style="color:var(--teal);">softlink.txt</div>
+            <div style="color:var(--muted);">↓ points to path</div>
+            <div style="color:var(--cyan);">file.txt</div>
+            <div style="color:#1a2e3a;font-size:10px;margin-top:4px;">like a Windows shortcut</div>
+          </div>
+          <div class="code" style="--lc:var(--teal);">
+            <span class="pr">$ </span><span class="cm">ln</span> <span class="fl">-s</span> <span class="ar">file.txt softlink.txt</span>
+            <span class="co"># create symbolic link</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">ln</span> <span class="fl">-s</span> <span class="ar">/etc/httpd/conf /home/ali/httpd-conf</span>
+            <span class="co"># symlink to a directory</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">ls</span> <span class="fl">-l</span> <span class="ar">softlink.txt</span>
+            <span class="ou">lrwxrwxrwx. 1 ali ali 8 Mar softlink.txt -> file.txt</span>
+          </div>
+          <table>
+            <tr><th colspan="2">Soft Link Rules</th></tr>
+            <tr><td class="tg">✔</td><td class="td2">Can link across filesystems</td></tr>
+            <tr><td class="tg">✔</td><td class="td2">Can link to directories</td></tr>
+            <tr><td class="tr2">✘</td><td class="td2">Breaks if original is deleted (dangling)</td></tr>
+            <tr><td class="tr2">✘</td><td class="td2">Different inode from target</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIND FILES -->
+  <div class="card" style="--lc:var(--blue);">
+    <div class="ch"><span>🔭</span><h2>Finding Files</h2><div class="cdot" style="background:var(--blue);"></div></div>
+    <div class="cb">
+      <div class="code" style="--lc:var(--blue);">
+        <span class="pr">$ </span><span class="cm">find</span> <span class="ar">/etc</span> <span class="fl">-name</span> <span class="ar">"*.conf"</span>
+        <span class="co"># find by name pattern</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">find</span> <span class="ar">/home</span> <span class="fl">-user</span> <span class="ar">ali</span>
+        <span class="co"># find files owned by ali</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">find</span> <span class="ar">/var</span> <span class="fl">-size</span> <span class="ar">+100M</span>
+        <span class="co"># find files larger than 100MB</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">find</span> <span class="ar">/</span> <span class="fl">-perm</span> <span class="ar">/4000</span>
+        <span class="co"># find SUID files</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">find</span> <span class="ar">/tmp</span> <span class="fl">-mtime</span> <span class="ar">-7</span>
+        <span class="co"># modified in last 7 days</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">find</span> <span class="ar">/home</span> <span class="fl">-type</span> <span class="ar">l</span>
+        <span class="co"># find symbolic links only</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUICK REFERENCE TABLE -->
+  <div class="card s3">
+    <div class="ch"><span>⚡</span><h2>Command Quick Reference</h2><div class="cdot" style="background:var(--yellow);"></div></div>
+    <div class="cb" style="padding:0;">
+      <table>
+        <thead><tr><th>Command</th><th>Key Options</th><th>What It Does</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">lsblk</td><td class="ta">-f</td><td class="td2">List block devices as tree</td><td class="ta" style="font-size:10.5px;">lsblk -f</td></tr>
+          <tr><td class="tc">blkid</td><td class="ta">/dev/sda1</td><td class="td2">Show UUID and filesystem type</td><td class="ta" style="font-size:10.5px;">blkid /dev/sda1</td></tr>
+          <tr><td class="tc">df -h</td><td class="ta">-hT</td><td class="td2">Disk space usage (human readable)</td><td class="ta" style="font-size:10.5px;">df -hT</td></tr>
+          <tr><td class="tc">du -sh</td><td class="ta">-sh *</td><td class="td2">Directory size</td><td class="ta" style="font-size:10.5px;">du -sh /var/log/*</td></tr>
+          <tr><td class="tc">mount</td><td class="ta">-t -o ro/rw</td><td class="td2">Mount a filesystem</td><td class="ta" style="font-size:10.5px;">mount /dev/sdb1 /mnt/data</td></tr>
+          <tr><td class="tc">mount -a</td><td class="ta">—</td><td class="td2">Mount all entries in /etc/fstab</td><td class="ta" style="font-size:10.5px;">mount -a</td></tr>
+          <tr><td class="tc">umount</td><td class="ta">-l -f</td><td class="td2">Unmount a filesystem</td><td class="ta" style="font-size:10.5px;">umount /mnt/data</td></tr>
+          <tr><td class="tc">lsof</td><td class="ta">/mountpoint</td><td class="td2">Show open files on mount</td><td class="ta" style="font-size:10.5px;">lsof /mnt/data</td></tr>
+          <tr><td class="tc">fuser -m</td><td class="ta">-m -k</td><td class="td2">Show/kill PIDs using mount</td><td class="ta" style="font-size:10.5px;">fuser -m /mnt/data</td></tr>
+          <tr><td class="tc">ln</td><td class="ta">—</td><td class="td2">Create hard link</td><td class="ta" style="font-size:10.5px;">ln file.txt hardlink.txt</td></tr>
+          <tr><td class="tc">ln -s</td><td class="ta">-s</td><td class="td2">Create symbolic (soft) link</td><td class="ta" style="font-size:10.5px;">ln -s /etc/httpd conf</td></tr>
+          <tr><td class="tc">find</td><td class="ta">-name -user -size -type -perm</td><td class="td2">Search for files</td><td class="ta" style="font-size:10.5px;">find / -name "*.conf"</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EXAM TIPS -->
+  <div class="card s3">
+    <div class="ch"><span>🏆</span><h2>Exam Tips</h2><div class="cdot" style="background:var(--orange);"></div></div>
+    <div class="cb">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="tips">
+          <div class="ti"><span class="ttag tw">⚠ FSTAB</span><span>A mistake in <code style="color:var(--yellow);">/etc/fstab</code> can prevent boot! Always test with <code style="color:var(--yellow);">mount -a</code> after editing. Use <strong>UUID</strong> not device names — they can change after reboot.</span></div>
+          <div class="ti"><span class="ttag th">💡 UUID</span><span>Get UUID with <code style="color:var(--yellow);">blkid</code> or <code style="color:var(--yellow);">lsblk -f</code>. Copy-paste it into fstab — don't type it by hand!</span></div>
+          <div class="ti"><span class="ttag tk">✔ MOUNT -a</span><span>After editing fstab, run <code style="color:var(--emerald);">mount -a</code> to test. If it returns an error, fix fstab immediately before rebooting.</span></div>
+          <div class="ti"><span class="ttag ti2">🔗 LINKS</span><span>Hard links: same inode, same filesystem, no directories. Soft links: different inode, cross filesystem, can link dirs. <code>ls -l</code> shows <code>l</code> for symlinks.</span></div>
+        </div>
+        <div class="tips">
+          <div class="ti"><span class="ttag tw">⚠ BUSY</span><span>Can't umount? You're probably <strong>inside</strong> the directory — <code>cd /</code> first, then try <code>umount</code> again!</span></div>
+          <div class="ti"><span class="ttag th">💡 df vs du</span><span><code style="color:var(--yellow);">df</code> = free space on filesystem. <code style="color:var(--yellow);">du</code> = how much space a directory/file uses. Different tools for different questions!</span></div>
+          <div class="ti"><span class="ttag tk">✔ nofail</span><span>Add <code style="color:var(--emerald);">nofail</code> option in fstab for non-critical mounts (USB, extra disks) — system boots even if device is missing.</span></div>
+          <div class="ti"><span class="ttag ti2">🔍 find</span><span><code style="color:var(--cyan);">find / -user ali</code> finds all files owned by ali — useful after deleting a user to locate orphaned files.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <span>Red Hat System Administration I (RH124) · Chapter 15 · Accessing Linux File Systems</span>
+  <span>mount · umount · lsblk · blkid · df · du · /etc/fstab · ln · ln -s · find</span>
+</div>
+
+</body>
+</html>

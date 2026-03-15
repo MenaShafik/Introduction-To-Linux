@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RH124 Ch10 – Configuring SSH</title>
+<link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#050709; --panel:#090c0f; --panel2:#0c0f12;
+    --border:#141b22; --text:#c8dae8; --muted:#334455;
+    --gold:#ffd060; --green:#00f080; --cyan:#00cfff;
+    --orange:#ff7b2c; --red:#ff3355; --purple:#b87fff;
+    --blue:#4db8ff; --teal:#00e5cc;
+    --mono:'Inconsolata',monospace; --sans:'Nunito',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);padding:24px;font-size:13px;}
+
+  /* HEADER */
+  .header{display:flex;align-items:center;gap:18px;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border);position:relative;}
+  .header::after{content:'';position:absolute;bottom:-1px;left:0;width:220px;height:2px;background:linear-gradient(90deg,var(--gold),transparent);}
+  .hico{width:52px;height:52px;border-radius:8px;background:rgba(255,208,96,.08);border:1px solid rgba(255,208,96,.25);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;}
+  .htx h1{font-size:26px;font-weight:900;}
+  .htx h1 em{color:var(--gold);font-style:normal;}
+  .htx p{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:4px;}
+  .hbadge{margin-left:auto;font-family:var(--mono);font-size:10px;padding:5px 13px;border-radius:3px;background:rgba(255,208,96,.07);color:var(--gold);border:1px solid rgba(255,208,96,.2);}
+
+  /* LAYOUT */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .s2{grid-column:span 2;} .s3{grid-column:span 3;}
+
+  /* CARD */
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+  .ch{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--panel2);}
+  .ch h2{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:var(--muted);}
+  .cdot{width:6px;height:6px;border-radius:50%;margin-left:auto;flex-shrink:0;}
+  .cb{padding:14px;display:flex;flex-direction:column;gap:10px;}
+
+  /* CODE */
+  .code{background:#030507;border:1px solid #0d1820;border-left:3px solid var(--lc,var(--gold));border-radius:3px;padding:9px 13px;font-family:var(--mono);font-size:12px;line-height:1.9;}
+  .pr{color:var(--green);}
+  .cm{color:var(--gold);}
+  .fl{color:var(--orange);}
+  .ar{color:var(--cyan);}
+  .co{color:#1e3040;font-size:10.5px;display:block;margin-top:1px;}
+  .ou{color:#243545;font-size:11px;display:block;margin-top:4px;padding-top:4px;border-top:1px solid #0d1820;}
+  .hl {color:var(--green);}
+  .hlc{color:var(--cyan);}
+  .hly{color:var(--gold);}
+  .hlo{color:var(--orange);}
+  .hlr{color:var(--red);}
+  .hlp{color:var(--purple);}
+
+  /* NOTE/TIP */
+  .note{background:rgba(255,123,44,.06);border:1px solid rgba(255,123,44,.18);border-left:3px solid var(--orange);border-radius:3px;padding:9px 13px;font-size:11.5px;line-height:1.65;color:#b89880;}
+  .note strong{color:var(--orange);}
+  .tip{background:rgba(255,208,96,.05);border:1px solid rgba(255,208,96,.15);border-left:3px solid var(--gold);border-radius:3px;padding:9px 13px;font-size:11.5px;line-height:1.65;color:#b0a880;}
+  .tip strong{color:var(--gold);}
+  .warn{background:rgba(255,51,85,.06);border:1px solid rgba(255,51,85,.18);border-left:3px solid var(--red);border-radius:3px;padding:9px 13px;font-size:11.5px;line-height:1.65;color:#b08090;}
+  .warn strong{color:var(--red);}
+
+  /* TABLE */
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;}
+  th{background:#070b0f;color:var(--muted);font-size:9.5px;text-transform:uppercase;letter-spacing:1px;padding:7px 11px;text-align:left;border-bottom:1px solid var(--border);}
+  td{padding:6px 11px;border-bottom:1px solid #0d1820;vertical-align:top;line-height:1.55;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#090e14;}
+  .tc{color:var(--gold);} .ta{color:var(--cyan);} .tg{color:var(--green);}
+  .tr2{color:var(--red);} .td2{color:#6a8aaa;font-size:10.5px;} .to{color:var(--orange);}
+
+  /* SSH FLOW DIAGRAM */
+  .flow{background:#030507;border:1px solid var(--border);border-radius:4px;padding:14px;font-family:var(--mono);font-size:11px;line-height:2;}
+  .fb{display:inline-block;padding:4px 12px;border-radius:3px;font-size:11px;}
+  .fb-c{background:rgba(0,207,255,.1);border:1px solid rgba(0,207,255,.3);color:var(--cyan);}
+  .fb-s{background:rgba(0,240,128,.1);border:1px solid rgba(0,240,128,.3);color:var(--green);}
+  .fb-k{background:rgba(255,208,96,.1);border:1px solid rgba(255,208,96,.3);color:var(--gold);}
+  .farr{color:var(--muted);margin:0 6px;}
+
+  /* FILE BLOCK */
+  .fblock{background:#030507;border:1px solid var(--border);border-left:3px solid var(--lc2,var(--gold));border-radius:3px;padding:10px 13px;font-family:var(--mono);font-size:11.5px;line-height:1.9;}
+  .fpath{color:var(--cyan);font-size:11px;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+  .fkey{color:var(--gold);}
+  .fval{color:var(--green);}
+  .fcom{color:#1e3040;font-size:10.5px;}
+
+  /* EXAM TIPS */
+  .tips{display:flex;flex-direction:column;gap:8px;}
+  .ti{display:flex;gap:10px;align-items:flex-start;font-size:11.5px;line-height:1.6;}
+  .ttag{font-family:var(--mono);font-size:9.5px;padding:2px 8px;border-radius:2px;flex-shrink:0;margin-top:2px;}
+  .tw{background:rgba(255,51,85,.12);color:#ff7799;border:1px solid rgba(255,51,85,.25);}
+  .tk{background:rgba(0,240,128,.1);color:var(--green);border:1px solid rgba(0,240,128,.25);}
+  .ti2{background:rgba(0,207,255,.1);color:var(--cyan);border:1px solid rgba(0,207,255,.25);}
+  .th{background:rgba(255,208,96,.1);color:var(--gold);border:1px solid rgba(255,208,96,.25);}
+
+  .footer{margin-top:18px;padding-top:12px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:#182028;display:flex;justify-content:space-between;}
+
+  @media(max-width:900px){.grid{grid-template-columns:1fr 1fr;}.s2,.s3{grid-column:span 2;}}
+  @media(max-width:580px){.grid{grid-template-columns:1fr;}.s2,.s3{grid-column:span 1;}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="hico">🔐</div>
+  <div class="htx">
+    <h1>RH124 <em>Chapter 10</em></h1>
+    <p>Configuring &amp; Securing SSH · Quick Reference</p>
+  </div>
+  <div class="hbadge">RHCSA Prep</div>
+</div>
+
+<div class="grid">
+
+  <!-- SSH BASICS -->
+  <div class="card">
+    <div class="ch"><span>🌐</span><h2>SSH Basics</h2><div class="cdot" style="background:var(--gold);"></div></div>
+    <div class="cb">
+      <table>
+        <tr><th>Term</th><th>Meaning</th></tr>
+        <tr><td class="tc">SSH</td><td class="td2">Secure Shell — encrypted remote login protocol</td></tr>
+        <tr><td class="tc">sshd</td><td class="td2">SSH daemon — the SERVER side service</td></tr>
+        <tr><td class="tc">ssh</td><td class="td2">SSH client — used to CONNECT to a server</td></tr>
+        <tr><td class="tc">Port</td><td class="td2">Default port 22 (TCP)</td></tr>
+        <tr><td class="tc">Public key</td><td class="td2">Shared freely — server stores it</td></tr>
+        <tr><td class="tc">Private key</td><td class="td2">Secret — never share! Stays on client</td></tr>
+        <tr><td class="tc">known_hosts</td><td class="td2">Stores trusted server fingerprints</td></tr>
+        <tr><td class="tc">authorized_keys</td><td class="td2">Stores allowed client public keys</td></tr>
+      </table>
+      <div class="tip"><strong>Rule:</strong> Private key stays on YOUR machine. Public key goes on the REMOTE server. Never share the private key!</div>
+    </div>
+  </div>
+
+  <!-- CONNECTING -->
+  <div class="card s2" style="--lc:var(--cyan);">
+    <div class="ch"><span>🚀</span><h2>Connecting with SSH</h2><div class="cdot" style="background:var(--cyan);"></div></div>
+    <div class="cb">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">ssh</span> <span class="ar">server01</span>
+            <span class="co"># connect as current user</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">ssh</span> <span class="ar">ali@server01</span>
+            <span class="co"># connect as user ali</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">ssh</span> <span class="ar">ali@192.168.1.10</span>
+            <span class="co"># connect using IP address</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">ssh</span> <span class="fl">-p</span> <span class="ar">2222 ali@server01</span>
+            <span class="co"># connect on custom port</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">ssh</span> <span class="ar">ali@server01</span> <span class="fl">hostname</span>
+            <span class="co"># run ONE command remotely, then exit</span>
+            <span class="ou">server01.example.com</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">ssh</span> <span class="ar">ali@server01</span> <span class="fl">'ls /var/log'</span>
+            <span class="co"># run remote command with quotes</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">ssh</span> <span class="fl">-X</span> <span class="ar">ali@server01</span>
+            <span class="co"># X11 forwarding (GUI apps remotely)</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">ssh</span> <span class="fl">-v</span> <span class="ar">ali@server01</span>
+            <span class="co"># verbose — debug connection issues</span>
+          </div>
+        </div>
+      </div>
+      <!-- FIRST CONNECTION -->
+      <div class="fblock" style="--lc2:var(--orange);">
+        <span class="fpath">First time connecting — host verification</span>
+        <span style="color:#243545;">The authenticity of host 'server01' can't be established.</span><br>
+        <span style="color:#243545;">RSA key fingerprint is SHA256:xxxxxxxxxxx</span><br>
+        <span style="color:var(--gold);">Are you sure you want to continue connecting (yes/no)?</span> <span style="color:var(--green);">yes</span><br>
+        <span style="color:#243545;">Warning: Permanently added 'server01' to known_hosts.</span>
+      </div>
+      <div class="note"><strong>Always verify</strong> the fingerprint on first connect — this prevents man-in-the-middle attacks. After typing <strong>yes</strong>, the key is saved to <code>~/.ssh/known_hosts</code>.</div>
+    </div>
+  </div>
+
+  <!-- KEY-BASED AUTH FLOW -->
+  <div class="card s3">
+    <div class="ch"><span>🔑</span><h2>SSH Key-Based Authentication — How It Works</h2><div class="cdot" style="background:var(--green);"></div></div>
+    <div class="cb">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div>
+          <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Step by Step Setup</div>
+          <div class="code" style="--lc:var(--green);">
+            <span class="co"># STEP 1 — Generate key pair on CLIENT</span>
+            <span class="pr">$ </span><span class="cm">ssh-keygen</span>
+            <span class="ou">Generating public/private rsa key pair.
+Enter file: <span class="hly">/home/ali/.ssh/id_rsa</span>   ← default
+Enter passphrase: <span class="hlp">(optional but recommended)</span>
+Your public key: <span class="hly">~/.ssh/id_rsa.pub</span>
+Your private key: <span class="hlr">~/.ssh/id_rsa</span></span>
+          </div>
+          <div class="code" style="margin-top:8px;">
+            <span class="co"># STEP 2 — Copy public key TO the server</span>
+            <span class="pr">$ </span><span class="cm">ssh-copy-id</span> <span class="ar">ali@server01</span>
+            <span class="ou">Number of key(s) added: 1
+Now try logging into server: ssh 'ali@server01'</span>
+          </div>
+          <div class="code" style="margin-top:8px; --lc:var(--cyan);">
+            <span class="co"># STEP 3 — Login WITHOUT password!</span>
+            <span class="pr">$ </span><span class="cm">ssh</span> <span class="ar">ali@server01</span>
+            <span class="ou"><span class="hl">[ali@server01 ~]$</span>  ← no password asked! ✔</span>
+          </div>
+        </div>
+        <div>
+          <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Key Files — Where They Live</div>
+          <table>
+            <tr><th>File</th><th>Location</th><th>Keep Secret?</th></tr>
+            <tr><td class="tc">id_rsa</td><td class="ta">~/.ssh/id_rsa</td><td class="tr2">✔ YES — private key</td></tr>
+            <tr><td class="tc">id_rsa.pub</td><td class="ta">~/.ssh/id_rsa.pub</td><td class="tg">No — public key</td></tr>
+            <tr><td class="tc">authorized_keys</td><td class="ta">~/.ssh/authorized_keys</td><td class="td2">On SERVER — holds allowed public keys</td></tr>
+            <tr><td class="tc">known_hosts</td><td class="ta">~/.ssh/known_hosts</td><td class="td2">On CLIENT — trusted server fingerprints</td></tr>
+            <tr><td class="tc">config</td><td class="ta">~/.ssh/config</td><td class="td2">Client shortcuts &amp; settings</td></tr>
+          </table>
+          <div style="margin-top:10px; display:flex;flex-direction:column;gap:8px;">
+            <div class="code" style="--lc:var(--purple);">
+              <span class="co"># generate stronger ED25519 key (recommended)</span>
+              <span class="pr">$ </span><span class="cm">ssh-keygen</span> <span class="fl">-t</span> <span class="ar">ed25519</span>
+              <span class="co"># produces: id_ed25519 and id_ed25519.pub</span>
+            </div>
+            <div class="code">
+              <span class="co"># manual copy if ssh-copy-id not available</span>
+              <span class="pr">$ </span><span class="cm">cat</span> <span class="ar">~/.ssh/id_rsa.pub</span> <span class="fl">|</span> <span class="cm">ssh</span> <span class="ar">ali@server01</span> <span class="fl">'cat >> ~/.ssh/authorized_keys'</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SSH CONFIG FILE -->
+  <div class="card s2" style="--lc:var(--purple);">
+    <div class="ch"><span>⚙️</span><h2>~/.ssh/config — Client Shortcuts</h2><div class="cdot" style="background:var(--purple);"></div></div>
+    <div class="cb">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div>
+          <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Without config file</div>
+          <div class="code" style="--lc:var(--red);">
+            <span class="co"># have to type this every time:</span>
+            <span class="pr">$ </span><span class="cm">ssh</span> <span class="fl">-p</span> <span class="ar">2222 -i ~/.ssh/mykey ali@192.168.1.100</span>
+          </div>
+        </div>
+        <div>
+          <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">With config file</div>
+          <div class="code" style="--lc:var(--green);">
+            <span class="co"># just type this:</span>
+            <span class="pr">$ </span><span class="cm">ssh</span> <span class="ar">myserver</span>
+          </div>
+        </div>
+      </div>
+      <div class="fblock" style="--lc2:var(--purple);">
+        <span class="fpath">~/.ssh/config</span>
+        <span class="fkey">Host </span><span class="fval">myserver</span><br>
+        <span style="color:var(--muted);">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="fkey">HostName </span><span class="fval">192.168.1.100</span><br>
+        <span style="color:var(--muted);">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="fkey">User </span><span class="fval">ali</span><br>
+        <span style="color:var(--muted);">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="fkey">Port </span><span class="fval">2222</span><br>
+        <span style="color:var(--muted);">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="fkey">IdentityFile </span><span class="fval">~/.ssh/mykey</span><br>
+        <br>
+        <span class="fkey">Host </span><span class="fval">webserver</span><br>
+        <span style="color:var(--muted);">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="fkey">HostName </span><span class="fval">web.example.com</span><br>
+        <span style="color:var(--muted);">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="fkey">User </span><span class="fval">root</span><br>
+        <span style="color:var(--muted);">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="fkey">IdentityFile </span><span class="fval">~/.ssh/id_rsa</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">chmod</span> <span class="fl">600</span> <span class="ar">~/.ssh/config</span>
+        <span class="co"># must be readable only by owner!</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SSHD SERVER CONFIG -->
+  <div class="card" style="--lc:var(--orange);">
+    <div class="ch"><span>🛡️</span><h2>sshd Server Config</h2><div class="cdot" style="background:var(--orange);"></div></div>
+    <div class="cb">
+      <div class="fblock" style="--lc2:var(--orange);">
+        <span class="fpath">/etc/ssh/sshd_config</span>
+        <span class="fkey">Port </span><span class="fval">22</span><span class="fcom">              # change to non-standard port</span><br>
+        <span class="fkey">PermitRootLogin </span><span class="fval">no</span><span class="fcom">        # disable root login!</span><br>
+        <span class="fkey">PasswordAuthentication </span><span class="fval">no</span><span class="fcom">  # keys only</span><br>
+        <span class="fkey">PubkeyAuthentication </span><span class="fval">yes</span><span class="fcom">   # allow key login</span><br>
+        <span class="fkey">AllowUsers </span><span class="fval">ali sara</span><span class="fcom">       # whitelist users</span><br>
+        <span class="fkey">MaxAuthTries </span><span class="fval">3</span><span class="fcom">            # max failed attempts</span><br>
+        <span class="fkey">ClientAliveInterval </span><span class="fval">300</span><span class="fcom">    # keepalive seconds</span><br>
+        <span class="fkey">X11Forwarding </span><span class="fval">no</span><span class="fcom">          # disable GUI forwarding</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">systemctl</span> <span class="fl">reload</span> <span class="ar">sshd</span>
+        <span class="co"># apply config changes (no disconnections)</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">sshd</span> <span class="fl">-t</span>
+        <span class="co"># test config for syntax errors BEFORE reloading</span>
+      </div>
+      <div class="warn"><strong>Always</strong> run <code>sshd -t</code> before reloading sshd — a bad config can lock you out of the server!</div>
+    </div>
+  </div>
+
+  <!-- SCP / SFTP -->
+  <div class="card s2" style="--lc:var(--teal);">
+    <div class="ch"><span>📦</span><h2>scp &amp; sftp — Secure File Transfer</h2><div class="cdot" style="background:var(--teal);"></div></div>
+    <div class="cb">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;">scp — Secure Copy</div>
+          <div class="code">
+            <span class="co"># copy file FROM local TO remote</span>
+            <span class="pr">$ </span><span class="cm">scp</span> <span class="ar">file.txt ali@server01:/tmp/</span>
+          </div>
+          <div class="code">
+            <span class="co"># copy file FROM remote TO local</span>
+            <span class="pr">$ </span><span class="cm">scp</span> <span class="ar">ali@server01:/tmp/file.txt .</span>
+          </div>
+          <div class="code">
+            <span class="co"># copy entire directory (-r recursive)</span>
+            <span class="pr">$ </span><span class="cm">scp</span> <span class="fl">-r</span> <span class="ar">mydir/ ali@server01:/home/ali/</span>
+          </div>
+          <div class="code">
+            <span class="co"># copy on custom port</span>
+            <span class="pr">$ </span><span class="cm">scp</span> <span class="fl">-P</span> <span class="ar">2222 file.txt ali@server01:/tmp/</span>
+            <span class="co"># NOTE: capital -P for scp (lowercase for ssh)</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;">sftp — Interactive Transfer</div>
+          <div class="code" style="--lc:var(--blue);">
+            <span class="pr">$ </span><span class="cm">sftp</span> <span class="ar">ali@server01</span>
+            <span class="ou"><span class="hl">sftp&gt;</span> ls          # list remote files
+<span class="hl">sftp&gt;</span> lls         # list LOCAL files
+<span class="hl">sftp&gt;</span> get file.txt # download file
+<span class="hl">sftp&gt;</span> put file.txt # upload file
+<span class="hl">sftp&gt;</span> cd /tmp      # change remote dir
+<span class="hl">sftp&gt;</span> lcd /home    # change local dir
+<span class="hl">sftp&gt;</span> bye          # exit</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SSH PERMISSIONS -->
+  <div class="card">
+    <div class="ch"><span>🔒</span><h2>SSH File Permissions</h2><div class="cdot" style="background:var(--red);"></div></div>
+    <div class="cb">
+      <div class="warn">SSH is very strict about permissions — wrong permissions = key ignored or connection refused!</div>
+      <table>
+        <tr><th>File / Dir</th><th>Required Permission</th><th>Command</th></tr>
+        <tr><td class="ta">~/.ssh/</td><td class="tg">700 (drwx------)</td><td class="tc" style="font-size:10px;">chmod 700 ~/.ssh</td></tr>
+        <tr><td class="ta">~/.ssh/id_rsa</td><td class="tg">600 (rw-------)</td><td class="tc" style="font-size:10px;">chmod 600 ~/.ssh/id_rsa</td></tr>
+        <tr><td class="ta">~/.ssh/id_rsa.pub</td><td class="tg">644 (rw-r--r--)</td><td class="tc" style="font-size:10px;">chmod 644 ~/.ssh/id_rsa.pub</td></tr>
+        <tr><td class="ta">~/.ssh/authorized_keys</td><td class="tg">600 (rw-------)</td><td class="tc" style="font-size:10px;">chmod 600 ~/.ssh/authorized_keys</td></tr>
+        <tr><td class="ta">~/.ssh/config</td><td class="tg">600 (rw-------)</td><td class="tc" style="font-size:10px;">chmod 600 ~/.ssh/config</td></tr>
+      </table>
+      <div class="code" style="--lc:var(--green);">
+        <span class="co"># fix all SSH permissions at once:</span>
+        <span class="pr">$ </span><span class="cm">chmod</span> <span class="fl">700</span> <span class="ar">~/.ssh</span>
+        <span class="pr">$ </span><span class="cm">chmod</span> <span class="fl">600</span> <span class="ar">~/.ssh/id_rsa ~/.ssh/authorized_keys</span>
+        <span class="pr">$ </span><span class="cm">chmod</span> <span class="fl">644</span> <span class="ar">~/.ssh/id_rsa.pub</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANAGE SSHD SERVICE -->
+  <div class="card">
+    <div class="ch"><span>⚡</span><h2>Managing sshd Service</h2><div class="cdot" style="background:var(--blue);"></div></div>
+    <div class="cb">
+      <div class="code" style="--lc:var(--blue);">
+        <span class="pr">$ </span><span class="cm">systemctl</span> <span class="fl">status</span> <span class="ar">sshd</span>
+        <span class="co"># check if sshd is running</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">systemctl</span> <span class="fl">enable --now</span> <span class="ar">sshd</span>
+        <span class="co"># start + enable at boot</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">systemctl</span> <span class="fl">reload</span> <span class="ar">sshd</span>
+        <span class="co"># reload config (no disconnections)</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">systemctl</span> <span class="fl">restart</span> <span class="ar">sshd</span>
+        <span class="co"># restart (drops active connections!)</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">ss</span> <span class="fl">-tlnp</span> <span class="fl">|</span> <span class="cm">grep</span> <span class="ar">ssh</span>
+        <span class="co"># verify sshd is listening on port 22</span>
+        <span class="ou">LISTEN  0  128  0.0.0.0:22  0.0.0.0:*  users:(("sshd",pid=1234))</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">journalctl</span> <span class="fl">-u</span> <span class="ar">sshd</span> <span class="fl">-f</span>
+        <span class="co"># watch sshd logs live</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUICK REFERENCE TABLE -->
+  <div class="card s3">
+    <div class="ch"><span>📋</span><h2>Command Quick Reference</h2><div class="cdot" style="background:var(--gold);"></div></div>
+    <div class="cb" style="padding:0;">
+      <table>
+        <thead><tr><th>Command</th><th>Key Options</th><th>What It Does</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">ssh</td><td class="ta">user@host -p -i -v -X</td><td class="td2">Connect to remote server</td><td class="tc" style="font-size:10.5px;">ssh ali@server01</td></tr>
+          <tr><td class="tc">ssh-keygen</td><td class="ta">-t ed25519 / rsa</td><td class="td2">Generate SSH key pair</td><td class="tc" style="font-size:10.5px;">ssh-keygen -t ed25519</td></tr>
+          <tr><td class="tc">ssh-copy-id</td><td class="ta">user@host</td><td class="td2">Copy public key to server</td><td class="tc" style="font-size:10.5px;">ssh-copy-id ali@server01</td></tr>
+          <tr><td class="tc">scp</td><td class="ta">-r -P port</td><td class="td2">Secure copy files over SSH</td><td class="tc" style="font-size:10.5px;">scp file.txt ali@server:/tmp/</td></tr>
+          <tr><td class="tc">sftp</td><td class="ta">get put ls cd</td><td class="td2">Interactive file transfer</td><td class="tc" style="font-size:10.5px;">sftp ali@server01</td></tr>
+          <tr><td class="tc">sshd -t</td><td class="ta">—</td><td class="td2">Test sshd config syntax</td><td class="tc" style="font-size:10.5px;">sshd -t</td></tr>
+          <tr><td class="tc">ssh-keyscan</td><td class="ta">-H host</td><td class="td2">Get server's public key fingerprint</td><td class="tc" style="font-size:10.5px;">ssh-keyscan server01</td></tr>
+          <tr><td class="tc">ss -tlnp</td><td class="ta">grep ssh</td><td class="td2">Check which port sshd listens on</td><td class="tc" style="font-size:10.5px;">ss -tlnp | grep ssh</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EXAM TIPS -->
+  <div class="card s3">
+    <div class="ch"><span>🏆</span><h2>Exam Tips</h2><div class="cdot" style="background:var(--orange);"></div></div>
+    <div class="cb">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="tips">
+          <div class="ti"><span class="ttag tw">⚠ LOCKOUT</span><span>Always run <code style="color:var(--gold);">sshd -t</code> before <code>systemctl reload sshd</code> — a bad config can lock you out of the server permanently!</span></div>
+          <div class="ti"><span class="ttag th">🔑 KEYS</span><span>Private key <code style="color:var(--gold);">id_rsa</code> must be <strong>600</strong>. If permissions are too open, SSH ignores the key silently and falls back to password.</span></div>
+          <div class="ti"><span class="ttag tk">✔ COPY</span><span>Use <code style="color:var(--green);">ssh-copy-id</code> — it handles creating <code>~/.ssh/</code>, <code>authorized_keys</code>, and correct permissions automatically.</span></div>
+          <div class="ti"><span class="ttag ti2">📌 PORT</span><span>scp uses <code style="color:var(--cyan);">-P</code> (capital) for port. ssh uses <code style="color:var(--cyan);">-p</code> (lowercase). Easy to mix up in the exam!</span></div>
+        </div>
+        <div class="tips">
+          <div class="ti"><span class="ttag tw">⚠ ROOT</span><span>Set <code style="color:var(--gold);">PermitRootLogin no</code> in sshd_config — never allow direct root SSH login in production or exam scenarios.</span></div>
+          <div class="ti"><span class="ttag th">💡 RELOAD</span><span>Use <code style="color:var(--gold);">reload</code> not <code>restart</code> for sshd — reload applies config without dropping active SSH connections.</span></div>
+          <div class="ti"><span class="ttag tk">✔ ED25519</span><span><code style="color:var(--green);">ssh-keygen -t ed25519</code> generates a stronger, shorter key than RSA. Preferred on modern RHEL systems.</span></div>
+          <div class="ti"><span class="ttag ti2">🔍 DEBUG</span><span>SSH not connecting? Use <code style="color:var(--cyan);">ssh -v ali@server</code> for verbose output — shows exactly where authentication fails.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <span>Red Hat System Administration I (RH124) · Chapter 10 · Configuring &amp; Securing SSH</span>
+  <span>ssh · ssh-keygen · ssh-copy-id · scp · sftp · sshd_config · known_hosts · authorized_keys</span>
+</div>
+
+</body>
+</html>

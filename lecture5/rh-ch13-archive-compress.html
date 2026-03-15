@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RH124 Ch12 – Archiving & Compressing Files</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Titillium+Web:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#060708; --panel:#0a0c0e; --panel2:#0d0f12;
+    --border:#151a20; --text:#cad5e0; --muted:#334455;
+    --lime:#c6ff00; --green:#00e676; --cyan:#00e5ff;
+    --orange:#ff6d00; --red:#ff1744; --purple:#d500f9;
+    --blue:#2979ff; --yellow:#ffd740; --teal:#1de9b6;
+    --mono:'Roboto Mono',monospace; --sans:'Titillium Web',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);padding:24px;font-size:13px;}
+
+  /* HEADER */
+  .header{display:flex;align-items:center;gap:18px;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border);position:relative;}
+  .header::after{content:'';position:absolute;bottom:-1px;left:0;width:230px;height:2px;background:linear-gradient(90deg,var(--lime),transparent);}
+  .hico{width:52px;height:52px;border-radius:8px;background:rgba(198,255,0,.07);border:1px solid rgba(198,255,0,.22);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;}
+  .htx h1{font-size:26px;font-weight:900;}
+  .htx h1 em{color:var(--lime);font-style:normal;}
+  .htx p{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:4px;}
+  .hbadge{margin-left:auto;font-family:var(--mono);font-size:10px;padding:5px 13px;border-radius:3px;background:rgba(198,255,0,.07);color:var(--lime);border:1px solid rgba(198,255,0,.2);}
+
+  /* LAYOUT */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .s2{grid-column:span 2;} .s3{grid-column:span 3;}
+
+  /* CARD */
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+  .ch{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--panel2);}
+  .ch h2{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:var(--muted);}
+  .cdot{width:6px;height:6px;border-radius:50%;margin-left:auto;flex-shrink:0;}
+  .cb{padding:14px;display:flex;flex-direction:column;gap:10px;}
+
+  /* CODE */
+  .code{background:#040507;border:1px solid #0d1520;border-left:3px solid var(--lc,var(--lime));border-radius:3px;padding:9px 13px;font-family:var(--mono);font-size:11.5px;line-height:1.9;}
+  .pr{color:var(--green);}
+  .cm{color:var(--yellow);}
+  .fl{color:var(--orange);}
+  .ar{color:var(--cyan);}
+  .co{color:#1e3040;font-size:10.5px;display:block;margin-top:1px;}
+  .ou{color:#243545;font-size:11px;display:block;margin-top:4px;padding-top:4px;border-top:1px solid #0d1820;}
+  .hl {color:var(--green);}
+  .hlc{color:var(--cyan);}
+  .hly{color:var(--yellow);}
+  .hlo{color:var(--orange);}
+  .hlr{color:var(--red);}
+  .hlp{color:var(--lime);}
+
+  /* NOTE/TIP/WARN */
+  .note{background:rgba(255,109,0,.06);border:1px solid rgba(255,109,0,.18);border-left:3px solid var(--orange);border-radius:3px;padding:9px 13px;font-size:11.5px;line-height:1.65;color:#b89880;}
+  .note strong{color:var(--orange);}
+  .tip{background:rgba(198,255,0,.05);border:1px solid rgba(198,255,0,.15);border-left:3px solid var(--lime);border-radius:3px;padding:9px 13px;font-size:11.5px;line-height:1.65;color:#a8b880;}
+  .tip strong{color:var(--lime);}
+  .warn{background:rgba(255,23,68,.06);border:1px solid rgba(255,23,68,.18);border-left:3px solid var(--red);border-radius:3px;padding:9px 13px;font-size:11.5px;line-height:1.65;color:#b08090;}
+  .warn strong{color:var(--red);}
+
+  /* TABLE */
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;}
+  th{background:#070a0d;color:var(--muted);font-size:9.5px;text-transform:uppercase;letter-spacing:1px;padding:7px 11px;text-align:left;border-bottom:1px solid var(--border);}
+  td{padding:6px 11px;border-bottom:1px solid #0d1820;vertical-align:top;line-height:1.55;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#090d12;}
+  .tc{color:var(--yellow);} .ta{color:var(--cyan);} .tg{color:var(--green);}
+  .tr2{color:var(--red);} .td2{color:#6a8aaa;font-size:10.5px;} .to{color:var(--orange);}
+  .tl{color:var(--lime);}
+
+  /* COMPRESSION COMPARE */
+  .cmp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .cbox{background:#040507;border:1px solid var(--border);border-radius:4px;padding:11px;text-align:center;}
+  .cbox .cname{font-family:var(--mono);font-size:13px;font-weight:700;margin-bottom:6px;}
+  .cbox .cext{font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:8px;}
+  .cbox .cspeed{font-size:10px;margin-bottom:3px;}
+  .cbox .cratio{font-size:10px;}
+  .bar{height:5px;border-radius:2px;margin-top:6px;}
+
+  /* FLAG ANATOMY */
+  .flag-row{display:flex;gap:6px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;}
+  .fpill{padding:4px 10px;border-radius:3px;border:1px solid transparent;text-align:center;}
+  .fpill .fl2{font-size:14px;font-weight:700;}
+  .fpill .fd{font-size:9.5px;margin-top:2px;color:var(--muted);}
+
+  /* EXAM TIPS */
+  .tips{display:flex;flex-direction:column;gap:8px;}
+  .ti{display:flex;gap:10px;align-items:flex-start;font-size:11.5px;line-height:1.6;}
+  .ttag{font-family:var(--mono);font-size:9.5px;padding:2px 8px;border-radius:2px;flex-shrink:0;margin-top:2px;}
+  .tw{background:rgba(255,23,68,.12);color:#ff7799;border:1px solid rgba(255,23,68,.25);}
+  .tk{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.25);}
+  .ti2{background:rgba(0,229,255,.1);color:var(--cyan);border:1px solid rgba(0,229,255,.25);}
+  .th{background:rgba(255,215,64,.1);color:var(--yellow);border:1px solid rgba(255,215,64,.25);}
+
+  .footer{margin-top:18px;padding-top:12px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:#182028;display:flex;justify-content:space-between;}
+
+  @media(max-width:900px){.grid{grid-template-columns:1fr 1fr;}.s2,.s3{grid-column:span 2;}}
+  @media(max-width:580px){.grid{grid-template-columns:1fr;}.s2,.s3{grid-column:span 1;}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="hico">🗜️</div>
+  <div class="htx">
+    <h1>RH124 <em>Chapter 12</em></h1>
+    <p>Archiving &amp; Compressing Files · tar · gzip · bzip2 · xz · zip</p>
+  </div>
+  <div class="hbadge">RHCSA Prep</div>
+</div>
+
+<div class="grid">
+
+  <!-- ARCHIVE vs COMPRESS -->
+  <div class="card">
+    <div class="ch"><span>💡</span><h2>Archive vs Compress</h2><div class="cdot" style="background:var(--lime);"></div></div>
+    <div class="cb">
+      <table>
+        <tr><th>Concept</th><th>Meaning</th></tr>
+        <tr><td class="tl">Archive</td><td class="td2">Bundle many files into ONE file — no size reduction. Tool: <code>tar</code></td></tr>
+        <tr><td class="tl">Compress</td><td class="td2">Reduce file size. Tools: <code>gzip bzip2 xz zip</code></td></tr>
+        <tr><td class="tl">Both</td><td class="td2">Archive AND compress together: <code>tar -czf</code> (tarball)</td></tr>
+      </table>
+      <div style="background:#040507;border:1px solid var(--border);border-radius:4px;padding:12px;font-family:var(--mono);font-size:11px;line-height:2;text-align:center;">
+        <div style="color:var(--cyan);">files: a.txt  b.txt  c.txt</div>
+        <div style="color:var(--muted);">↓  tar (archive)</div>
+        <div style="color:var(--yellow);">archive.tar  (same size, one file)</div>
+        <div style="color:var(--muted);">↓  gzip (compress)</div>
+        <div style="color:var(--lime);">archive.tar.gz  (smaller!)</div>
+      </div>
+      <div class="tip"><strong>tar alone</strong> does NOT compress. You need <strong>-z -j -J</strong> flags to compress while archiving.</div>
+    </div>
+  </div>
+
+  <!-- COMPRESSION COMPARISON -->
+  <div class="card s2">
+    <div class="ch"><span>⚖️</span><h2>Compression Tools Comparison</h2><div class="cdot" style="background:var(--cyan);"></div></div>
+    <div class="cb">
+      <div class="cmp-grid">
+        <div class="cbox" style="border-color:rgba(0,229,255,.25);">
+          <div class="cname" style="color:var(--cyan);">gzip</div>
+          <div class="cext">.gz / .tar.gz</div>
+          <div class="cspeed" style="color:var(--green);">⚡ Speed: Fast</div>
+          <div class="cratio" style="color:var(--orange);">📦 Ratio: Medium</div>
+          <div class="bar" style="background:linear-gradient(90deg,var(--cyan) 60%,#111 60%);"></div>
+        </div>
+        <div class="cbox" style="border-color:rgba(255,215,64,.25);">
+          <div class="cname" style="color:var(--yellow);">bzip2</div>
+          <div class="cext">.bz2 / .tar.bz2</div>
+          <div class="cspeed" style="color:var(--orange);">⚡ Speed: Slow</div>
+          <div class="cratio" style="color:var(--yellow);">📦 Ratio: Better</div>
+          <div class="bar" style="background:linear-gradient(90deg,var(--yellow) 75%,#111 75%);"></div>
+        </div>
+        <div class="cbox" style="border-color:rgba(198,255,0,.25);">
+          <div class="cname" style="color:var(--lime);">xz</div>
+          <div class="cext">.xz / .tar.xz</div>
+          <div class="cspeed" style="color:var(--red);">⚡ Speed: Slowest</div>
+          <div class="cratio" style="color:var(--lime);">📦 Ratio: Best</div>
+          <div class="bar" style="background:linear-gradient(90deg,var(--lime) 90%,#111 90%);"></div>
+        </div>
+        <div class="cbox" style="border-color:rgba(41,121,255,.25);">
+          <div class="cname" style="color:var(--blue);">zip</div>
+          <div class="cext">.zip</div>
+          <div class="cspeed" style="color:var(--green);">⚡ Speed: Fast</div>
+          <div class="cratio" style="color:var(--orange);">📦 Ratio: Medium</div>
+          <div class="bar" style="background:linear-gradient(90deg,var(--blue) 55%,#111 55%);"></div>
+        </div>
+      </div>
+      <table>
+        <tr><th>Tool</th><th>Extension</th><th>tar flag</th><th>Compress cmd</th><th>Decompress cmd</th></tr>
+        <tr><td class="tc">gzip</td><td class="ta">.gz</td><td class="tl">-z</td><td class="tg">gzip file</td><td class="tg">gunzip file.gz</td></tr>
+        <tr><td class="tc">bzip2</td><td class="ta">.bz2</td><td class="tl">-j</td><td class="tg">bzip2 file</td><td class="tg">bunzip2 file.bz2</td></tr>
+        <tr><td class="tc">xz</td><td class="ta">.xz</td><td class="tl">-J</td><td class="tg">xz file</td><td class="tg">unxz file.xz</td></tr>
+        <tr><td class="tc">zip</td><td class="ta">.zip</td><td class="tl">—</td><td class="tg">zip out.zip files</td><td class="tg">unzip file.zip</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAR FLAGS -->
+  <div class="card">
+    <div class="ch"><span>🚩</span><h2>tar — Key Flags</h2><div class="cdot" style="background:var(--yellow);"></div></div>
+    <div class="cb">
+      <div class="flag-row">
+        <div class="fpill" style="background:rgba(0,230,118,.1);border-color:rgba(0,230,118,.3);">
+          <div class="fl2" style="color:var(--green);">c</div>
+          <div class="fd">Create archive</div>
+        </div>
+        <div class="fpill" style="background:rgba(0,229,255,.1);border-color:rgba(0,229,255,.3);">
+          <div class="fl2" style="color:var(--cyan);">x</div>
+          <div class="fd">Extract archive</div>
+        </div>
+        <div class="fpill" style="background:rgba(255,215,64,.1);border-color:rgba(255,215,64,.3);">
+          <div class="fl2" style="color:var(--yellow);">t</div>
+          <div class="fd">List contents</div>
+        </div>
+        <div class="fpill" style="background:rgba(255,109,0,.1);border-color:rgba(255,109,0,.3);">
+          <div class="fl2" style="color:var(--orange);">f</div>
+          <div class="fd">Filename (always use!)</div>
+        </div>
+        <div class="fpill" style="background:rgba(198,255,0,.1);border-color:rgba(198,255,0,.3);">
+          <div class="fl2" style="color:var(--lime);">v</div>
+          <div class="fd">Verbose output</div>
+        </div>
+        <div class="fpill" style="background:rgba(0,229,255,.08);border-color:rgba(0,229,255,.2);">
+          <div class="fl2" style="color:var(--cyan);">z</div>
+          <div class="fd">gzip compress</div>
+        </div>
+        <div class="fpill" style="background:rgba(255,215,64,.08);border-color:rgba(255,215,64,.2);">
+          <div class="fl2" style="color:var(--yellow);">j</div>
+          <div class="fd">bzip2 compress</div>
+        </div>
+        <div class="fpill" style="background:rgba(198,255,0,.08);border-color:rgba(198,255,0,.2);">
+          <div class="fl2" style="color:var(--lime);">J</div>
+          <div class="fd">xz compress</div>
+        </div>
+        <div class="fpill" style="background:rgba(213,0,249,.1);border-color:rgba(213,0,249,.3);">
+          <div class="fl2" style="color:var(--purple);">p</div>
+          <div class="fd">Preserve permissions</div>
+        </div>
+        <div class="fpill" style="background:rgba(29,233,182,.1);border-color:rgba(29,233,182,.3);">
+          <div class="fl2" style="color:var(--teal);">C</div>
+          <div class="fd">Change directory</div>
+        </div>
+      </div>
+      <div class="tip"><strong>Memory trick:</strong> <span style="color:var(--green);">c</span>reate · e<span style="color:var(--cyan);">x</span>tract · lis<span style="color:var(--yellow);">t</span> · <span style="color:var(--orange);">f</span>ilename — always use <strong>f</strong> last before the filename!</div>
+      <div class="note"><strong>Order matters:</strong> flags come before the archive name. <code style="color:var(--yellow);">tar -czf backup.tar.gz files/</code> — the <code>f</code> flag must be immediately before the filename.</div>
+    </div>
+  </div>
+
+  <!-- TAR CREATE -->
+  <div class="card s2" style="--lc:var(--green);">
+    <div class="ch"><span>📦</span><h2>tar — Creating Archives</h2><div class="cdot" style="background:var(--green);"></div></div>
+    <div class="cb">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;">No Compression (.tar)</div>
+          <div class="code" style="--lc:var(--muted);">
+            <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-cf</span> <span class="ar">archive.tar file1 file2</span>
+            <span class="co"># archive files only — no compression</span>
+          </div>
+          <div class="code" style="--lc:var(--muted);">
+            <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-cf</span> <span class="ar">backup.tar /etc/</span>
+            <span class="co"># archive entire /etc directory</span>
+          </div>
+          <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-top:4px;">gzip (.tar.gz)</div>
+          <div class="code" style="--lc:var(--cyan);">
+            <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-czf</span> <span class="ar">backup.tar.gz /etc/</span>
+            <span class="co"># create + gzip compress</span>
+          </div>
+          <div class="code" style="--lc:var(--cyan);">
+            <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-czvf</span> <span class="ar">backup.tar.gz /etc/</span>
+            <span class="co"># same + verbose (show files)</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;">bzip2 (.tar.bz2)</div>
+          <div class="code" style="--lc:var(--yellow);">
+            <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-cjf</span> <span class="ar">backup.tar.bz2 /etc/</span>
+            <span class="co"># create + bzip2 compress</span>
+          </div>
+          <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-top:4px;">xz (.tar.xz) — best compression</div>
+          <div class="code" style="--lc:var(--lime);">
+            <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-cJf</span> <span class="ar">backup.tar.xz /etc/</span>
+            <span class="co"># create + xz compress (best ratio)</span>
+          </div>
+          <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-top:4px;">Multiple sources</div>
+          <div class="code" style="--lc:var(--orange);">
+            <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-czf</span> <span class="ar">backup.tar.gz /etc/ /home/ /var/log/</span>
+            <span class="co"># archive multiple dirs at once</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAR EXTRACT -->
+  <div class="card" style="--lc:var(--cyan);">
+    <div class="ch"><span>📂</span><h2>tar — Extracting Archives</h2><div class="cdot" style="background:var(--cyan);"></div></div>
+    <div class="cb">
+      <div class="code" style="--lc:var(--cyan);">
+        <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-xf</span> <span class="ar">archive.tar</span>
+        <span class="co"># extract to CURRENT directory</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-xzf</span> <span class="ar">backup.tar.gz</span>
+        <span class="co"># extract gzip archive</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-xjf</span> <span class="ar">backup.tar.bz2</span>
+        <span class="co"># extract bzip2 archive</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-xJf</span> <span class="ar">backup.tar.xz</span>
+        <span class="co"># extract xz archive</span>
+      </div>
+      <div class="code" style="--lc:var(--teal);">
+        <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-xzf</span> <span class="ar">backup.tar.gz</span> <span class="fl">-C</span> <span class="ar">/tmp/restore/</span>
+        <span class="co"># extract to SPECIFIC directory</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-xzf</span> <span class="ar">backup.tar.gz</span> <span class="ar">etc/hosts</span>
+        <span class="co"># extract ONE specific file only</span>
+      </div>
+      <div class="tip"><strong>-C flag</strong> = Change to directory before extracting. Always use it to avoid cluttering your current directory!</div>
+    </div>
+  </div>
+
+  <!-- TAR LIST / INSPECT -->
+  <div class="card" style="--lc:var(--yellow);">
+    <div class="ch"><span>🔍</span><h2>tar — Listing Contents</h2><div class="cdot" style="background:var(--yellow);"></div></div>
+    <div class="cb">
+      <div class="code" style="--lc:var(--yellow);">
+        <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-tf</span> <span class="ar">archive.tar</span>
+        <span class="co"># list contents WITHOUT extracting</span>
+        <span class="ou">etc/
+etc/hosts
+etc/passwd
+etc/ssh/sshd_config</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-tzf</span> <span class="ar">backup.tar.gz</span>
+        <span class="co"># list gzip archive contents</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-tvf</span> <span class="ar">archive.tar</span>
+        <span class="co"># list with details (permissions, size, date)</span>
+        <span class="ou">-rw-r--r-- root/root  158 2026-03-07 etc/hosts
+-rw-r--r-- root/root 1234 2026-03-07 etc/passwd</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-tzvf</span> <span class="ar">backup.tar.gz</span> <span class="fl">|</span> <span class="cm">grep</span> <span class="ar">passwd</span>
+        <span class="co"># search for specific file in archive</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- GZIP BZIP2 XZ STANDALONE -->
+  <div class="card s2" style="--lc:var(--orange);">
+    <div class="ch"><span>🔧</span><h2>gzip · bzip2 · xz — Standalone Commands</h2><div class="cdot" style="background:var(--orange);"></div></div>
+    <div class="cb">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="color:var(--cyan);font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;">gzip</div>
+          <div class="code" style="--lc:var(--cyan);">
+            <span class="pr">$ </span><span class="cm">gzip</span> <span class="ar">file.txt</span>
+            <span class="co"># → creates file.txt.gz</span>
+            <span class="co"># original file is REMOVED</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">gzip</span> <span class="fl">-k</span> <span class="ar">file.txt</span>
+            <span class="co"># keep original file</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">gunzip</span> <span class="ar">file.txt.gz</span>
+            <span class="co"># decompress</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">gzip</span> <span class="fl">-d</span> <span class="ar">file.txt.gz</span>
+            <span class="co"># same as gunzip</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">zcat</span> <span class="ar">file.txt.gz</span>
+            <span class="co"># read gz file without extracting</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="color:var(--yellow);font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;">bzip2</div>
+          <div class="code" style="--lc:var(--yellow);">
+            <span class="pr">$ </span><span class="cm">bzip2</span> <span class="ar">file.txt</span>
+            <span class="co"># → creates file.txt.bz2</span>
+            <span class="co"># original file is REMOVED</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">bzip2</span> <span class="fl">-k</span> <span class="ar">file.txt</span>
+            <span class="co"># keep original file</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">bunzip2</span> <span class="ar">file.txt.bz2</span>
+            <span class="co"># decompress</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">bzip2</span> <span class="fl">-d</span> <span class="ar">file.txt.bz2</span>
+            <span class="co"># same as bunzip2</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">bzcat</span> <span class="ar">file.txt.bz2</span>
+            <span class="co"># read bz2 file without extracting</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="color:var(--lime);font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;">xz</div>
+          <div class="code" style="--lc:var(--lime);">
+            <span class="pr">$ </span><span class="cm">xz</span> <span class="ar">file.txt</span>
+            <span class="co"># → creates file.txt.xz</span>
+            <span class="co"># original file is REMOVED</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">xz</span> <span class="fl">-k</span> <span class="ar">file.txt</span>
+            <span class="co"># keep original file</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">unxz</span> <span class="ar">file.txt.xz</span>
+            <span class="co"># decompress</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">xz</span> <span class="fl">-d</span> <span class="ar">file.txt.xz</span>
+            <span class="co"># same as unxz</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">xzcat</span> <span class="ar">file.txt.xz</span>
+            <span class="co"># read xz file without extracting</span>
+          </div>
+        </div>
+      </div>
+      <div class="warn"><strong>Warning:</strong> gzip, bzip2, and xz <strong>delete the original file</strong> by default! Use <code>-k</code> flag to keep the original.</div>
+    </div>
+  </div>
+
+  <!-- ZIP / UNZIP -->
+  <div class="card" style="--lc:var(--blue);">
+    <div class="ch"><span>🤐</span><h2>zip &amp; unzip</h2><div class="cdot" style="background:var(--blue);"></div></div>
+    <div class="cb">
+      <div class="code" style="--lc:var(--blue);">
+        <span class="pr">$ </span><span class="cm">zip</span> <span class="ar">archive.zip file1 file2</span>
+        <span class="co"># zip files together</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">zip</span> <span class="fl">-r</span> <span class="ar">archive.zip mydir/</span>
+        <span class="co"># zip entire directory (-r recursive)</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">unzip</span> <span class="ar">archive.zip</span>
+        <span class="co"># extract zip archive</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">unzip</span> <span class="ar">archive.zip</span> <span class="fl">-d</span> <span class="ar">/tmp/restore/</span>
+        <span class="co"># extract to specific directory</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">unzip</span> <span class="fl">-l</span> <span class="ar">archive.zip</span>
+        <span class="co"># list contents without extracting</span>
+      </div>
+      <div class="tip"><strong>zip keeps</strong> the original files — no need for <code>-k</code>. Best when sharing with Windows users.</div>
+    </div>
+  </div>
+
+  <!-- TRANSFER WITH SSH -->
+  <div class="card s2" style="--lc:var(--teal);">
+    <div class="ch"><span>🚀</span><h2>Archive + Transfer Over SSH</h2><div class="cdot" style="background:var(--teal);"></div></div>
+    <div class="cb">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;">Create then copy</div>
+          <div class="code">
+            <span class="co"># step 1 — create archive</span>
+            <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-czf</span> <span class="ar">/tmp/backup.tar.gz /etc/</span>
+          </div>
+          <div class="code">
+            <span class="co"># step 2 — copy to remote server</span>
+            <span class="pr">$ </span><span class="cm">scp</span> <span class="ar">/tmp/backup.tar.gz ali@server:/tmp/</span>
+          </div>
+          <div class="code">
+            <span class="co"># step 3 — extract on remote</span>
+            <span class="pr">$ </span><span class="cm">ssh</span> <span class="ar">ali@server</span> <span class="fl">'tar -xzf /tmp/backup.tar.gz -C /restore/'</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;">Stream directly over SSH (no temp file)</div>
+          <div class="code" style="--lc:var(--teal);">
+            <span class="co"># compress + send in ONE command</span>
+            <span class="pr">$ </span><span class="cm">tar</span> <span class="fl">-czf</span> <span class="fl">-</span> <span class="ar">/etc/</span> <span class="fl">|</span> <span class="cm">ssh</span> <span class="ar">ali@server</span> <span class="fl">'tar -xzf - -C /restore/'</span>
+            <span class="co"># - means stdin/stdout (pipe it directly)</span>
+          </div>
+          <div class="code">
+            <span class="co"># receive archive FROM remote</span>
+            <span class="pr">$ </span><span class="cm">ssh</span> <span class="ar">ali@server</span> <span class="fl">'tar -czf - /etc/'</span> <span class="fl">|</span> <span class="cm">tar</span> <span class="fl">-xzf</span> <span class="fl">-</span> <span class="fl">-C</span> <span class="ar">/local/restore/</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUICK REFERENCE TABLE -->
+  <div class="card s3">
+    <div class="ch"><span>⚡</span><h2>Command Quick Reference</h2><div class="cdot" style="background:var(--yellow);"></div></div>
+    <div class="cb" style="padding:0;">
+      <table>
+        <thead><tr><th>Task</th><th>Command</th><th>Extension</th></tr></thead>
+        <tbody>
+          <tr><td class="td2">Create tar archive (no compression)</td><td class="tc">tar -cf archive.tar files/</td><td class="ta">.tar</td></tr>
+          <tr><td class="td2">Create + gzip compress</td><td class="tc">tar -czf archive.tar.gz files/</td><td class="ta">.tar.gz</td></tr>
+          <tr><td class="td2">Create + bzip2 compress</td><td class="tc">tar -cjf archive.tar.bz2 files/</td><td class="ta">.tar.bz2</td></tr>
+          <tr><td class="td2">Create + xz compress (best)</td><td class="tc">tar -cJf archive.tar.xz files/</td><td class="ta">.tar.xz</td></tr>
+          <tr><td class="td2">Extract archive (any type)</td><td class="tc">tar -xf archive.tar.gz</td><td class="ta">auto-detect</td></tr>
+          <tr><td class="td2">Extract to specific directory</td><td class="tc">tar -xzf archive.tar.gz -C /tmp/</td><td class="ta">.tar.gz</td></tr>
+          <tr><td class="td2">List contents without extracting</td><td class="tc">tar -tf archive.tar.gz</td><td class="ta">any</td></tr>
+          <tr><td class="td2">List with details</td><td class="tc">tar -tvf archive.tar.gz</td><td class="ta">any</td></tr>
+          <tr><td class="td2">Compress single file (gzip)</td><td class="tc">gzip file.txt</td><td class="ta">.gz</td></tr>
+          <tr><td class="td2">Decompress gzip</td><td class="tc">gunzip file.txt.gz</td><td class="ta">.gz</td></tr>
+          <tr><td class="td2">Compress single file (bzip2)</td><td class="tc">bzip2 file.txt</td><td class="ta">.bz2</td></tr>
+          <tr><td class="td2">Decompress bzip2</td><td class="tc">bunzip2 file.txt.bz2</td><td class="ta">.bz2</td></tr>
+          <tr><td class="td2">Compress single file (xz)</td><td class="tc">xz file.txt</td><td class="ta">.xz</td></tr>
+          <tr><td class="td2">Decompress xz</td><td class="tc">unxz file.txt.xz</td><td class="ta">.xz</td></tr>
+          <tr><td class="td2">Create zip archive</td><td class="tc">zip -r archive.zip mydir/</td><td class="ta">.zip</td></tr>
+          <tr><td class="td2">Extract zip archive</td><td class="tc">unzip archive.zip -d /tmp/</td><td class="ta">.zip</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EXAM TIPS -->
+  <div class="card s3">
+    <div class="ch"><span>🏆</span><h2>Exam Tips</h2><div class="cdot" style="background:var(--orange);"></div></div>
+    <div class="cb">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="tips">
+          <div class="ti"><span class="ttag tw">⚠ DELETE</span><span>gzip, bzip2, xz <strong>delete the original</strong> file after compressing! Use <code style="color:var(--yellow);">-k</code> to keep it. zip does NOT delete originals.</span></div>
+          <div class="ti"><span class="ttag th">🔑 FLAGS</span><span><code style="color:var(--yellow);">-z</code>=gzip · <code style="color:var(--yellow);">-j</code>=bzip2 · <code style="color:var(--yellow);">-J</code>=xz. Note capital <strong>J</strong> for xz — easy to confuse with lowercase <strong>j</strong> for bzip2!</span></div>
+          <div class="ti"><span class="ttag tk">✔ LIST FIRST</span><span>Always run <code style="color:var(--green);">tar -tf archive.tar.gz</code> before extracting — check what's inside and where it will land.</span></div>
+          <div class="ti"><span class="ttag ti2">📁 -C FLAG</span><span>Use <code style="color:var(--cyan);">-C /path/</code> to extract into a specific directory instead of your current location — avoids messy extractions.</span></div>
+        </div>
+        <div class="tips">
+          <div class="ti"><span class="ttag tw">⚠ f FLAG</span><span>The <code style="color:var(--yellow);">f</code> flag must come <strong>immediately before</strong> the archive filename. Wrong: <code>tar -fczv</code> → Right: <code>tar -czvf archive.tar.gz</code></span></div>
+          <div class="ti"><span class="ttag th">💡 SPEED</span><span>In a hurry? Use <strong>gzip</strong> (-z). Need smallest file? Use <strong>xz</strong> (-J). Need Windows compatibility? Use <strong>zip</strong>.</span></div>
+          <div class="ti"><span class="ttag tk">✔ PRESERVE</span><span>Use <code style="color:var(--green);">tar -p</code> when archiving system files — preserves original permissions and ownership on extraction.</span></div>
+          <div class="ti"><span class="ttag ti2">🔍 IDENTIFY</span><span>Don't know archive type? Use <code style="color:var(--cyan);">file archive.tar.gz</code> — it reads the magic bytes and tells you the real format.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <span>Red Hat System Administration I (RH124) · Chapter 12 · Archiving &amp; Compressing Files</span>
+  <span>tar · gzip · bzip2 · xz · zip · scp · -czf · -xzf · -tf · -C</span>
+</div>
+
+</body>
+</html>

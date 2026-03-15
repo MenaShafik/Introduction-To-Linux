@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RH124 Ch14 – Installing & Updating Software Packages</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Raleway:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#050608; --panel:#090b0e; --panel2:#0c0e11;
+    --border:#141924; --text:#c8d8e8; --muted:#2e4055;
+    --sky:#38bdf8; --green:#4ade80; --yellow:#facc15;
+    --orange:#fb923c; --red:#f87171; --purple:#a78bfa;
+    --pink:#f472b6; --teal:#2dd4bf; --white:#e2e8f0;
+    --mono:'Space Mono',monospace; --sans:'Raleway',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);padding:24px;font-size:13px;}
+
+  /* HEADER */
+  .header{display:flex;align-items:center;gap:18px;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border);position:relative;}
+  .header::after{content:'';position:absolute;bottom:-1px;left:0;width:240px;height:2px;background:linear-gradient(90deg,var(--sky),transparent);}
+  .hico{width:52px;height:52px;border-radius:8px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.22);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;}
+  .htx h1{font-size:26px;font-weight:900;}
+  .htx h1 em{color:var(--sky);font-style:normal;}
+  .htx p{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:4px;}
+  .hbadge{margin-left:auto;font-family:var(--mono);font-size:10px;padding:5px 13px;border-radius:3px;background:rgba(56,189,248,.07);color:var(--sky);border:1px solid rgba(56,189,248,.2);}
+
+  /* LAYOUT */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .s2{grid-column:span 2;} .s3{grid-column:span 3;}
+
+  /* CARD */
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+  .ch{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--panel2);}
+  .ch h2{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:var(--muted);}
+  .cdot{width:6px;height:6px;border-radius:50%;margin-left:auto;flex-shrink:0;}
+  .cb{padding:14px;display:flex;flex-direction:column;gap:10px;}
+
+  /* CODE */
+  .code{background:#030507;border:1px solid #0d1520;border-left:3px solid var(--lc,var(--sky));border-radius:3px;padding:9px 13px;font-family:var(--mono);font-size:11.5px;line-height:1.9;}
+  .pr{color:var(--green);}
+  .cm{color:var(--yellow);}
+  .fl{color:var(--orange);}
+  .ar{color:var(--sky);}
+  .co{color:#1a2a3a;font-size:10.5px;display:block;margin-top:1px;}
+  .ou{color:#243545;font-size:11px;display:block;margin-top:4px;padding-top:4px;border-top:1px solid #0d1820;}
+  .hl {color:var(--green);}
+  .hlc{color:var(--sky);}
+  .hly{color:var(--yellow);}
+  .hlo{color:var(--orange);}
+  .hlr{color:var(--red);}
+  .hlp{color:var(--purple);}
+
+  /* NOTE/TIP/WARN */
+  .note{background:rgba(251,146,60,.06);border:1px solid rgba(251,146,60,.18);border-left:3px solid var(--orange);border-radius:3px;padding:9px 13px;font-size:11.5px;line-height:1.65;color:#b89880;}
+  .note strong{color:var(--orange);}
+  .tip{background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.15);border-left:3px solid var(--sky);border-radius:3px;padding:9px 13px;font-size:11.5px;line-height:1.65;color:#90b0c8;}
+  .tip strong{color:var(--sky);}
+  .warn{background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.18);border-left:3px solid var(--red);border-radius:3px;padding:9px 13px;font-size:11.5px;line-height:1.65;color:#b08090;}
+  .warn strong{color:var(--red);}
+
+  /* TABLE */
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;}
+  th{background:#070a0e;color:var(--muted);font-size:9.5px;text-transform:uppercase;letter-spacing:1px;padding:7px 11px;text-align:left;border-bottom:1px solid var(--border);}
+  td{padding:6px 11px;border-bottom:1px solid #0d1820;vertical-align:top;line-height:1.55;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#090d14;}
+  .tc{color:var(--yellow);} .ta{color:var(--sky);} .tg{color:var(--green);}
+  .tr2{color:var(--red);} .td2{color:#5a8aaa;font-size:10.5px;} .to{color:var(--orange);}
+  .tp{color:var(--purple);}
+
+  /* RPM ANATOMY */
+  .rpm-name{background:#030507;border:1px solid var(--border);border-radius:4px;padding:14px;font-family:var(--mono);font-size:13px;text-align:center;line-height:2.2;}
+  .rn{color:var(--sky);}
+  .rv{color:var(--green);}
+  .rr{color:var(--yellow);}
+  .ra{color:var(--orange);}
+  .rsep{color:var(--muted);}
+
+  /* DNF vs YUM */
+  .dvy-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+
+  /* REPO FILE */
+  .fblock{background:#030507;border:1px solid var(--border);border-left:3px solid var(--lc2,var(--sky));border-radius:3px;padding:10px 13px;font-family:var(--mono);font-size:11.5px;line-height:1.9;}
+  .fpath{color:var(--sky);font-size:10px;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+  .fkey{color:var(--yellow);}
+  .fval{color:var(--green);}
+  .fcom{color:#1a2a3a;font-size:10px;}
+
+  /* EXAM TIPS */
+  .tips{display:flex;flex-direction:column;gap:8px;}
+  .ti{display:flex;gap:10px;align-items:flex-start;font-size:11.5px;line-height:1.6;}
+  .ttag{font-family:var(--mono);font-size:9.5px;padding:2px 8px;border-radius:2px;flex-shrink:0;margin-top:2px;}
+  .tw{background:rgba(248,113,113,.12);color:#ff9999;border:1px solid rgba(248,113,113,.25);}
+  .tk{background:rgba(74,222,128,.1);color:var(--green);border:1px solid rgba(74,222,128,.25);}
+  .ti2{background:rgba(56,189,248,.1);color:var(--sky);border:1px solid rgba(56,189,248,.25);}
+  .th{background:rgba(250,204,21,.1);color:var(--yellow);border:1px solid rgba(250,204,21,.25);}
+
+  .footer{margin-top:18px;padding-top:12px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:#182028;display:flex;justify-content:space-between;}
+
+  @media(max-width:900px){.grid{grid-template-columns:1fr 1fr;}.s2,.s3{grid-column:span 2;}}
+  @media(max-width:580px){.grid{grid-template-columns:1fr;}.s2,.s3{grid-column:span 1;}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="hico">📦</div>
+  <div class="htx">
+    <h1>RH124 <em>Chapter 14</em></h1>
+    <p>Installing &amp; Updating Software Packages · dnf · rpm · repos</p>
+  </div>
+  <div class="hbadge">RHCSA Prep</div>
+</div>
+
+<div class="grid">
+
+  <!-- RPM PACKAGE NAME ANATOMY -->
+  <div class="card s3">
+    <div class="ch"><span>🔬</span><h2>RPM Package Name Anatomy</h2><div class="cdot" style="background:var(--sky);"></div></div>
+    <div class="cb">
+      <div class="rpm-name">
+        <span class="rn">httpd</span><span class="rsep">-</span><span class="rv">2.4.57</span><span class="rsep">-</span><span class="rr">8.el9</span><span class="rsep">.</span><span class="ra">x86_64</span><span class="rsep">.rpm</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:2px;">
+        <div style="background:#030507;border:1px solid var(--border);border-top:3px solid var(--sky);border-radius:4px;padding:10px;text-align:center;">
+          <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--sky);">httpd</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px;">Package Name</div>
+          <div style="font-size:10px;color:#5a8aaa;margin-top:2px;">what it is</div>
+        </div>
+        <div style="background:#030507;border:1px solid var(--border);border-top:3px solid var(--green);border-radius:4px;padding:10px;text-align:center;">
+          <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--green);">2.4.57</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px;">Version</div>
+          <div style="font-size:10px;color:#5a8aaa;margin-top:2px;">upstream version</div>
+        </div>
+        <div style="background:#030507;border:1px solid var(--border);border-top:3px solid var(--yellow);border-radius:4px;padding:10px;text-align:center;">
+          <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--yellow);">8.el9</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px;">Release</div>
+          <div style="font-size:10px;color:#5a8aaa;margin-top:2px;">RH build number</div>
+        </div>
+        <div style="background:#030507;border:1px solid var(--border);border-top:3px solid var(--orange);border-radius:4px;padding:10px;text-align:center;">
+          <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--orange);">x86_64</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px;">Architecture</div>
+          <div style="font-size:10px;color:#5a8aaa;margin-top:2px;">x86_64 / noarch / i686</div>
+        </div>
+      </div>
+      <table>
+        <tr><th>Architecture</th><th>Meaning</th></tr>
+        <tr><td class="tc">x86_64</td><td class="td2">64-bit Intel/AMD — most servers and desktops</td></tr>
+        <tr><td class="tc">noarch</td><td class="td2">No architecture — scripts, configs (runs on any CPU)</td></tr>
+        <tr><td class="tc">i686</td><td class="td2">32-bit Intel — legacy only</td></tr>
+        <tr><td class="tc">aarch64</td><td class="td2">64-bit ARM — Raspberry Pi, cloud ARM instances</td></tr>
+        <tr><td class="tc">src</td><td class="td2">Source RPM — contains source code, not binaries</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- DNF INSTALL / REMOVE -->
+  <div class="card" style="--lc:var(--green);">
+    <div class="ch"><span>⬇️</span><h2>dnf — Install &amp; Remove</h2><div class="cdot" style="background:var(--green);"></div></div>
+    <div class="cb">
+      <div class="code" style="--lc:var(--green);">
+        <span class="pr"># </span><span class="co" style="color:var(--muted);">INSTALL</span>
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">install</span> <span class="ar">httpd</span>
+        <span class="co"># install package + all dependencies</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">install</span> <span class="ar">httpd mariadb php</span>
+        <span class="co"># install multiple packages at once</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">install</span> <span class="ar">/path/to/package.rpm</span>
+        <span class="co"># install local RPM file via dnf</span>
+      </div>
+      <div class="code" style="--lc:var(--red);">
+        <span class="pr"># </span><span class="co" style="color:var(--muted);">REMOVE</span>
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">remove</span> <span class="ar">httpd</span>
+        <span class="co"># remove package</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">autoremove</span>
+        <span class="co"># remove unused dependency packages</span>
+      </div>
+      <div class="tip"><strong>dnf resolves dependencies automatically</strong> — it installs everything the package needs. rpm alone does NOT resolve dependencies.</div>
+    </div>
+  </div>
+
+  <!-- DNF UPDATE -->
+  <div class="card" style="--lc:var(--yellow);">
+    <div class="ch"><span>🔄</span><h2>dnf — Update Packages</h2><div class="cdot" style="background:var(--yellow);"></div></div>
+    <div class="cb">
+      <div class="code" style="--lc:var(--yellow);">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">update</span>
+        <span class="co"># update ALL installed packages</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">update</span> <span class="ar">httpd</span>
+        <span class="co"># update ONE specific package</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">check-update</span>
+        <span class="co"># list available updates (don't install)</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">upgrade</span>
+        <span class="co"># same as update (modern alias)</span>
+      </div>
+      <div class="code" style="--lc:var(--purple);">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">downgrade</span> <span class="ar">httpd</span>
+        <span class="co"># roll back to previous version</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">update</span> <span class="fl">--security</span>
+        <span class="co"># install security updates ONLY</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DNF SEARCH / INFO -->
+  <div class="card" style="--lc:var(--sky);">
+    <div class="ch"><span>🔍</span><h2>dnf — Search &amp; Info</h2><div class="cdot" style="background:var(--sky);"></div></div>
+    <div class="cb">
+      <div class="code" style="--lc:var(--sky);">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">search</span> <span class="ar">httpd</span>
+        <span class="co"># search by name and description</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">info</span> <span class="ar">httpd</span>
+        <span class="co"># show full info: version, size, repo, description</span>
+        <span class="ou">Name    : httpd
+Version : 2.4.57
+Release : 8.el9
+Repo    : appstream
+Summary : Apache HTTP Server</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">list</span> <span class="ar">installed</span>
+        <span class="co"># list ALL installed packages</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">list</span> <span class="ar">available</span>
+        <span class="co"># list ALL available packages in repos</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">provides</span> <span class="ar">/var/www/html</span>
+        <span class="co"># which package provides this file/path?</span>
+        <span class="ou">httpd-2.4.57 : Apache HTTP Server</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">provides</span> <span class="ar">ifconfig</span>
+        <span class="co"># find which package provides a command</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DNF GROUPS -->
+  <div class="card" style="--lc:var(--purple);">
+    <div class="ch"><span>🎯</span><h2>dnf — Groups</h2><div class="cdot" style="background:var(--purple);"></div></div>
+    <div class="cb">
+      <div class="code" style="--lc:var(--purple);">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">group list</span>
+        <span class="co"># list all available package groups</span>
+        <span class="ou">Available Environment Groups:
+  Server with GUI
+  Server
+  Minimal Install
+Available Groups:
+  Development Tools
+  System Tools</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">group info</span> <span class="ar">"Development Tools"</span>
+        <span class="co"># what packages are in this group?</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">group install</span> <span class="ar">"Development Tools"</span>
+        <span class="co"># install all packages in group</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">group remove</span> <span class="ar">"Development Tools"</span>
+        <span class="co"># remove all packages in group</span>
+      </div>
+      <div class="tip"><strong>Groups</strong> install many related packages at once — e.g. "Development Tools" installs gcc, make, git, etc. in one command.</div>
+    </div>
+  </div>
+
+  <!-- DNF HISTORY -->
+  <div class="card" style="--lc:var(--teal);">
+    <div class="ch"><span>📜</span><h2>dnf — History &amp; Undo</h2><div class="cdot" style="background:var(--teal);"></div></div>
+    <div class="cb">
+      <div class="code" style="--lc:var(--teal);">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">history</span>
+        <span class="co"># list all past dnf transactions</span>
+        <span class="ou">ID  | Command         | Date       | Action
+ 5  | install httpd   | 2026-03-07 | Install
+ 4  | update          | 2026-03-06 | Update
+ 3  | remove nginx    | 2026-03-05 | Remove</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">history info</span> <span class="ar">5</span>
+        <span class="co"># details of transaction #5</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">history undo</span> <span class="ar">5</span>
+        <span class="co"># UNDO transaction #5 (uninstall httpd)</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">history redo</span> <span class="ar">5</span>
+        <span class="co"># REDO transaction #5</span>
+      </div>
+      <div class="tip"><strong>dnf history undo</strong> is a lifesaver — if an update broke something, undo it with one command!</div>
+    </div>
+  </div>
+
+  <!-- REPOS -->
+  <div class="card s2" style="--lc:var(--orange);">
+    <div class="ch"><span>🏪</span><h2>Repositories (Repos)</h2><div class="cdot" style="background:var(--orange);"></div></div>
+    <div class="cb">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="code" style="--lc:var(--orange);">
+            <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">repolist</span>
+            <span class="co"># list enabled repos</span>
+            <span class="ou">repo id          repo name
+baseos           Red Hat BaseOS
+appstream        Red Hat AppStream</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">repolist all</span>
+            <span class="co"># list ALL repos (enabled + disabled)</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">config-manager --enable</span> <span class="ar">reponame</span>
+            <span class="co"># enable a disabled repo</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">config-manager --disable</span> <span class="ar">reponame</span>
+            <span class="co"># disable a repo</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">install</span> <span class="fl">--enablerepo=</span><span class="ar">epel</span> <span class="ar">htop</span>
+            <span class="co"># use specific repo for one install</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="fblock" style="--lc2:var(--orange);">
+            <span class="fpath">/etc/yum.repos.d/myrepo.repo</span>
+            <span class="fkey">[myrepo]</span><span class="fcom">              # repo ID</span><br>
+            <span class="fkey">name=</span><span class="fval">My Custom Repo</span><br>
+            <span class="fkey">baseurl=</span><span class="fval">http://repo.example.com/rhel9/</span><br>
+            <span class="fkey">enabled=</span><span class="fval">1</span><span class="fcom">           # 1=on  0=off</span><br>
+            <span class="fkey">gpgcheck=</span><span class="fval">1</span><span class="fcom">          # verify signatures</span><br>
+            <span class="fkey">gpgkey=</span><span class="fval">http://repo.example.com/RPM-GPG-KEY</span>
+          </div>
+          <table>
+            <tr><th>Default RHEL Repos</th><th>Contains</th></tr>
+            <tr><td class="tc">BaseOS</td><td class="td2">Core OS packages — kernel, systemd</td></tr>
+            <tr><td class="tc">AppStream</td><td class="td2">Applications, languages, DBs</td></tr>
+            <tr><td class="tc">Extras</td><td class="td2">Extra community packages</td></tr>
+            <tr><td class="tc">EPEL</td><td class="td2">Extra Packages for Enterprise Linux</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RPM COMMAND -->
+  <div class="card" style="--lc:var(--pink);">
+    <div class="ch"><span>🔩</span><h2>rpm — Low-level Tool</h2><div class="cdot" style="background:var(--pink);"></div></div>
+    <div class="cb">
+      <div class="code" style="--lc:var(--pink);">
+        <span class="pr">$ </span><span class="cm">rpm</span> <span class="fl">-qa</span>
+        <span class="co"># list ALL installed packages</span>
+        <span class="ou">httpd-2.4.57-8.el9.x86_64
+bash-5.1.8-6.el9.x86_64 ...</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">rpm</span> <span class="fl">-q</span> <span class="ar">httpd</span>
+        <span class="co"># is httpd installed? shows version</span>
+        <span class="ou">httpd-2.4.57-8.el9.x86_64</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">rpm</span> <span class="fl">-qi</span> <span class="ar">httpd</span>
+        <span class="co"># detailed info about installed package</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">rpm</span> <span class="fl">-ql</span> <span class="ar">httpd</span>
+        <span class="co"># list ALL files installed by httpd</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">rpm</span> <span class="fl">-qf</span> <span class="ar">/etc/httpd/conf/httpd.conf</span>
+        <span class="co"># which package owns this file?</span>
+        <span class="ou">httpd-2.4.57-8.el9.x86_64</span>
+      </div>
+      <div class="code">
+        <span class="pr">$ </span><span class="cm">rpm</span> <span class="fl">-qd</span> <span class="ar">httpd</span>
+        <span class="co"># list documentation files for package</span>
+      </div>
+      <div class="warn"><strong>Never use rpm -i to install</strong> on a live system — it doesn't resolve dependencies. Use <code>dnf install</code> instead!</div>
+    </div>
+  </div>
+
+  <!-- MODULES / STREAMS -->
+  <div class="card s2" style="--lc:var(--teal);">
+    <div class="ch"><span>🌊</span><h2>dnf Modules &amp; Streams (AppStream)</h2><div class="cdot" style="background:var(--teal);"></div></div>
+    <div class="cb">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="code" style="--lc:var(--teal);">
+            <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">module list</span>
+            <span class="co"># list all available modules + streams</span>
+            <span class="ou">Name     Stream   Profiles  Summary
+php      8.1      common    PHP scripting
+php      8.2      common    PHP scripting
+nodejs   18       common    Node.js
+mariadb  10.5     server    MariaDB DB</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">module list</span> <span class="ar">php</span>
+            <span class="co"># list streams for php module only</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">module info</span> <span class="ar">php:8.2</span>
+            <span class="co"># details about php stream 8.2</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">module enable</span> <span class="ar">php:8.2</span>
+            <span class="co"># enable specific version stream</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">module install</span> <span class="ar">php:8.2</span>
+            <span class="co"># enable + install php 8.2</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">module disable</span> <span class="ar">php</span>
+            <span class="co"># disable php module entirely</span>
+          </div>
+          <div class="code">
+            <span class="pr">$ </span><span class="cm">dnf</span> <span class="fl">module reset</span> <span class="ar">php</span>
+            <span class="co"># reset module to default state</span>
+          </div>
+          <div class="tip"><strong>Streams</strong> let you choose WHICH version of a package to install — e.g. PHP 8.1 vs 8.2. Only ONE stream per module can be active at a time.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULL REFERENCE TABLE -->
+  <div class="card s3">
+    <div class="ch"><span>⚡</span><h2>Command Quick Reference</h2><div class="cdot" style="background:var(--yellow);"></div></div>
+    <div class="cb" style="padding:0;">
+      <table>
+        <thead><tr><th>Command</th><th>What It Does</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td class="tc">dnf install</td><td class="td2">Install package + dependencies</td><td class="ta" style="font-size:10.5px;">dnf install httpd</td></tr>
+          <tr><td class="tc">dnf remove</td><td class="td2">Remove/uninstall package</td><td class="ta" style="font-size:10.5px;">dnf remove httpd</td></tr>
+          <tr><td class="tc">dnf update</td><td class="td2">Update all or specific package</td><td class="ta" style="font-size:10.5px;">dnf update httpd</td></tr>
+          <tr><td class="tc">dnf check-update</td><td class="td2">List available updates (no install)</td><td class="ta" style="font-size:10.5px;">dnf check-update</td></tr>
+          <tr><td class="tc">dnf search</td><td class="td2">Search package by name/description</td><td class="ta" style="font-size:10.5px;">dnf search web server</td></tr>
+          <tr><td class="tc">dnf info</td><td class="td2">Show package details</td><td class="ta" style="font-size:10.5px;">dnf info httpd</td></tr>
+          <tr><td class="tc">dnf list installed</td><td class="td2">List all installed packages</td><td class="ta" style="font-size:10.5px;">dnf list installed</td></tr>
+          <tr><td class="tc">dnf provides</td><td class="td2">Find which package owns a file/cmd</td><td class="ta" style="font-size:10.5px;">dnf provides ifconfig</td></tr>
+          <tr><td class="tc">dnf group list</td><td class="td2">List available package groups</td><td class="ta" style="font-size:10.5px;">dnf group list</td></tr>
+          <tr><td class="tc">dnf group install</td><td class="td2">Install all packages in a group</td><td class="ta" style="font-size:10.5px;">dnf group install "Dev Tools"</td></tr>
+          <tr><td class="tc">dnf repolist</td><td class="td2">List enabled repositories</td><td class="ta" style="font-size:10.5px;">dnf repolist all</td></tr>
+          <tr><td class="tc">dnf history</td><td class="td2">Show past transactions</td><td class="ta" style="font-size:10.5px;">dnf history</td></tr>
+          <tr><td class="tc">dnf history undo</td><td class="td2">Undo a past transaction</td><td class="ta" style="font-size:10.5px;">dnf history undo 5</td></tr>
+          <tr><td class="tc">dnf module list</td><td class="td2">List modules and streams</td><td class="ta" style="font-size:10.5px;">dnf module list php</td></tr>
+          <tr><td class="tc">dnf module install</td><td class="td2">Install specific module stream</td><td class="ta" style="font-size:10.5px;">dnf module install php:8.2</td></tr>
+          <tr><td class="tc">dnf autoremove</td><td class="td2">Remove orphan dependencies</td><td class="ta" style="font-size:10.5px;">dnf autoremove</td></tr>
+          <tr><td class="tc">dnf downgrade</td><td class="td2">Roll back to older version</td><td class="ta" style="font-size:10.5px;">dnf downgrade httpd</td></tr>
+          <tr><td class="tc">rpm -qa</td><td class="td2">List all installed RPMs</td><td class="ta" style="font-size:10.5px;">rpm -qa | grep http</td></tr>
+          <tr><td class="tc">rpm -q</td><td class="td2">Check if package is installed</td><td class="ta" style="font-size:10.5px;">rpm -q httpd</td></tr>
+          <tr><td class="tc">rpm -ql</td><td class="td2">List files installed by package</td><td class="ta" style="font-size:10.5px;">rpm -ql httpd</td></tr>
+          <tr><td class="tc">rpm -qf</td><td class="td2">Which package owns this file?</td><td class="ta" style="font-size:10.5px;">rpm -qf /etc/hosts</td></tr>
+          <tr><td class="tc">rpm -qi</td><td class="td2">Show package info</td><td class="ta" style="font-size:10.5px;">rpm -qi httpd</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EXAM TIPS -->
+  <div class="card s3">
+    <div class="ch"><span>🏆</span><h2>Exam Tips</h2><div class="cdot" style="background:var(--orange);"></div></div>
+    <div class="cb">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="tips">
+          <div class="ti"><span class="ttag tw">⚠ RPM vs DNF</span><span><code style="color:var(--yellow);">rpm</code> does NOT resolve dependencies — always use <code style="color:var(--yellow);">dnf install</code> for installing. Use <code>rpm</code> only for querying installed packages.</span></div>
+          <div class="ti"><span class="ttag th">🔍 PROVIDES</span><span><code style="color:var(--yellow);">dnf provides</code> is key for the exam — if asked "install the package that provides command X", use this first!</span></div>
+          <div class="ti"><span class="ttag tk">✔ HISTORY</span><span>If you accidentally install or remove something, <code style="color:var(--green);">dnf history undo [ID]</code> reverses the entire transaction cleanly.</span></div>
+          <div class="ti"><span class="ttag ti2">📁 REPO FILE</span><span>Custom repos go in <code style="color:var(--sky);">/etc/yum.repos.d/</code> with a <code>.repo</code> extension. Set <code>enabled=1</code> and <code>gpgcheck=0</code> for lab repos without a GPG key.</span></div>
+        </div>
+        <div class="tips">
+          <div class="ti"><span class="ttag tw">⚠ MODULES</span><span>Only <strong>one stream</strong> per module can be active at a time. To switch PHP from 8.1 to 8.2: <code style="color:var(--yellow);">dnf module reset php</code> first, then enable 8.2.</span></div>
+          <div class="ti"><span class="ttag th">💡 -qf</span><span><code style="color:var(--yellow);">rpm -qf /path/to/file</code> — use this to find which package a config file belongs to. Very useful for troubleshooting!</span></div>
+          <div class="ti"><span class="ttag tk">✔ GROUP</span><span>Groups are quoted when they contain spaces: <code style="color:var(--green);">dnf group install "Development Tools"</code> — the quotes are required!</span></div>
+          <div class="ti"><span class="ttag ti2">🔄 UPDATE</span><span><code style="color:var(--sky);">dnf update</code> with no arguments updates EVERYTHING. On exam, be careful — only update what the question asks for.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <span>Red Hat System Administration I (RH124) · Chapter 14 · Installing &amp; Updating Software Packages</span>
+  <span>dnf · rpm · install · update · search · provides · groups · modules · repos</span>
+</div>
+
+</body>
+</html>

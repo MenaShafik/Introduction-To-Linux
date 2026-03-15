@@ -1,0 +1,304 @@
+file/directory:
+----------------
+
+1) rename/cut  mv f/d
+2) create 
+touch f, mkdir -p d  
+3) remove rm -rf f/d, 
+rmdir empty d
+4) edit
+5) list,cat ls -laR, 
+cat head teal more less f
+6) copy --> cp -pr f/d
+7) cd --> access d
+8) compress
+9) archive
+10) link
+
+
+Linux help:
+------------
+1) man ls, man -k passwd
+2) info ls
+    pinfo ls
+3) --help  --> ls --help
+4) /usr/share/doc/passwd
+
+
+
+Edit file:
+vi, vim, nano
+
+modes:
+1) insert mode
+2) navigation
+3) last line mode
+
+
+insert --> i, I, o, O, a, A
+navigating --> j,k,l,h,
+$
+dd
+yy --> p
+x,X
+:set number
+:set nonumber
+:noh
+/search-word --> enter
+u --> undo
+
+--------------------------------------
+permission:
+what can u do to files/directories(rwx)
+
+privilege:
+what can u do on system
+
+User types: sudo apt install vim
+                │
+                ▼
+        Is user in sudoers?
+        (/etc/sudoers or /etc/sudoers.d/)
+                │
+        ┌───────┴───────┐
+       YES              NO
+        │                │
+        ▼                ▼
+  Ask for password   "not in sudoers"
+        │              error 
+        ▼
+  Password correct?
+   ┌────┴────┐
+  YES        NO
+   │          │
+   ▼          ▼
+Run command  "Sorry, try again"
+as root      (3 attempts max)
+
+---------------------------------------------
+# 1. sudo reads config
+/etc/sudoers
+/etc/sudoers.d/*
+
+# 2. Checks if user is allowed
+john ALL=(ALL) ALL  ← found? proceed
+
+# 3. Authenticates user
+/etc/shadow  ← password hash checked here
+
+# 4. Runs command as root
+effective UID = 0 (root)
+
+--------------------------------------------
+
+commands day2:
+--------------
+history
+    1  ip a
+    2  su - aya
+    3  history
+    4  cd /
+    5  ls
+    6  ll
+    7  cd /
+    8  ll
+    9  cd
+   10  cd /etc/
+   11  cd ~
+   12  cd ~aya
+   13  cd /home/aya
+   14  ll
+   15  cd /tmp/
+   16  cd -
+   17  cp /home/aya/f1 /mnt/ ; ls -l /mnt/f1
+   18  cp /home/aya/sysadmn/ /mnt/ ; ls -l /mnt/sysadmn
+   19  cp /home/aya/sysadmn /mnt/ ; ls -l /mnt/sysadmn
+   20  cp /home/aya/sysadmn /mnt/ ; ls -l /mnt
+   21  cp -r /home/aya/sysadmn /mnt/ ; ls -l /mnt
+   22  ll
+   23  rm f1
+   24  rm f2
+   25  rm -rf  f3 F1
+   26  ll
+   27  rm dir2
+   28  rmdir dir2
+   29  rm -rf dir2
+   30  ll
+   31  rm -i aya.txt
+   32  ll
+   33  ls -lR d1
+   34  mkdir ts
+   35  ll
+   36  rmdir ts
+   37  ll
+   38  rmdir ts
+   39  mkdir ts
+   40  ll
+   41  rm ts
+   42  man rmdir
+   43  man ls
+   44  ll
+   45  mv code /root/cd
+   46  ll
+   47  mv cd dev
+   48  mv cd
+   49  man mv
+   50  ll
+   51  mv dev .dev
+   52  ll
+   53  ls -la
+   54  mv .dev dev
+   55  ll
+   56  mv cd /tmp/
+   57  ll
+   58  cd /tmp/
+   59  ll
+   60  cd
+   61  ll
+   62  mv d1 /tmp/tester
+   63  ll
+   64  cd /tmp/
+   65  ll
+   66  cd tester/
+   67  ll
+   68  ls -lR d2
+   69  cd
+   70  ll
+   71  touch f{1..9}
+   72  ll
+   73  touch file fa fb xyz abc abcd
+   74  ll
+   75  rm -rf f*
+   76  ll
+   77  rm -rf ???
+   78  ll
+   79  rm -rf ab??
+   80  ll
+   81  history
+   82  ll
+   83  man
+   84  info ls
+   85  pinfo ls
+   86  vim ls
+   87  man ls
+   88  cat /etc/passwd
+   89  passwd
+   90  man -k passwd
+   91  man 1 ls
+   92  man 1 passwd
+   93  man 5 passwd
+   94  man -5 passwd
+   95  man man
+   96  man passwd.5
+   97*
+   98  cat /etc/passwd
+   99  ls
+  100  ls 1>result.txt
+  101  cat result.txt
+  102  lp 1>result.txt
+  103  lp 2>err.txt
+  104  cat err.txt
+  105  ls /tmp/  1>result.txt
+  106  cat result.txt
+  107  ls  1>> result.txt
+  108  cat result.txt
+  109  lp  2>> /dev/null
+  110  ls result.txt u.txt &>  allinone.txt
+  111  cat allinone.txt
+  112  cat result.txt u.txt &>>  allinone.txt
+  113  cat allinone.txt
+  114  man ls
+  115  man man
+  116  date > /tmp/saved-timestamp
+  117  cat /tmp/saved-timestamp
+  118  date
+  119   cat step1.sh step2.log step3 result.txt > /tmp/all-four-steps-in-one
+  120   cat step1.sh step2.log step3 result.txt 2> /tmp/all-four-steps-in-one
+  121  cat /tmp/all-four-steps-in-one
+  122  ls -l
+  123  ls -l | wc -l
+  124  ls -l /usr/bin | less
+  125  cat /etc/passwd | grep aya | wc -l
+  126  cat /etc/passwd | grep aya | wc -l > useraya.txt
+  127  cat useraya.txt
+  128  cat /etc/passwd | grep aya > useraya.txt
+  129  cat useraya.txt
+  130  vim fa
+  131*
+  132  vim text
+  133  vim text < cat /etc/passwd
+  134  vim text
+  135  vim text < /etc/passwd
+  136  cat /etc/passwd
+  137  vim text
+  138  cp /etc/passwd passwd
+  139  vim passwd
+  140  vim notexixt.txt
+  141  who
+  142  whoami
+  143  whereis ls
+  144  ls
+  145  ls -l
+  146  last
+  147  who
+  148  su - aya
+  149  history
+
+=====================================================================================
+=====================================================================================
+
+RHSA: LAB2
+----------------
+Section 1: File & Directory Management
+--------------------------------------
+1. Create the following directories: dir1, dir2, dir3, and copy them and their
+contents to /tmp.
+Ans:
+2. Move back the three directories with their contents from the last step to /opt.
+Ans:
+3. Create nested directories in one command.
+Example: mkdir Egypt/Alex/mycompany
+Ans:
+4. Create a directory named lab_dir in your home directory, and inside it, create
+three empty files named file1.txt, file2.txt, and file3.txt.
+Ans:
+5. Go to the newly created lab_dir directory, then go back to your home directory
+using a relative path.
+Ans:
+6. Copy file1.txt to your home directory and rename it to file1_backup.txt.
+Ans:
+7. Move file2.txt into a new folder called moved_files/ and rename it to
+file2_renamed.txt.
+Ans:
+8. Delete file3.txt and then delete the moved_files directory (after deleting its
+contents).
+Ans:
+
+Section 2: Viewing & Managing Files
+-----------------------------------
+9. Create a text file with more than 20 lines using a loop, then use:
+• cat to view all contents
+• more and less to scroll
+• head to show top 5 lines
+• tail to show last 5 lines
+Ans:
+10. List files in long format with hidden files. Then list them sorted by modification
+time.
+Ans:
+11. List all the files/directories that are starting with "b", followed by any two
+characters, and ending with "k".
+Ans:
+12. Create a directory called archive, then move all .txt files into it, list the
+contents, and show the first 3 lines of each file.
+Ans:
+
+Section 4: User & Environment Commands
+---------------------------------------
+13. Know what user you are logged in with.
+Ans:
+14. Change the password of a user and root.
+Ans:
+15. Display all the previous commands that you have used.
+Ans:
+16. last users logged in
+Ans:
